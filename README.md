@@ -1,59 +1,36 @@
-# Nexus Academy
+# WheelForge
 
-Nexus Academy is an AI-powered adaptive learning adventure for mathematics and English. This first commit contains a production-oriented monorepo foundation with a functioning FastAPI API, deterministic educational engines, a React TypeScript frontend, Docker wiring, seed data, tests, and implementation docs.
+WheelForge is a local-first React and TypeScript app for weighted decision wheels, multi-step generators, templates, and tournaments. Tournament hosts can spin a saved wheel to draw a match map, challenge, or rule, while recording the real match winner separately. Browser storage remains the default; an optional Supabase Auth and Postgres integration provides explicit private cloud backups when configured.
 
-## Stack
-
-- Frontend: Vite, React, TypeScript, Tailwind CSS, TanStack Query, Framer Motion, React Hook Form, Zod, Recharts, KaTeX
-- Backend: FastAPI, async SQLAlchemy-ready architecture, Alembic, PostgreSQL, pgvector, Redis
-- Auth: email/password with bcrypt-compatible hashing interface, access and refresh token services
-- AI: provider interface with deterministic fallback tutor, diagnostic, writing feedback, and expedition planner
-
-## Quick Start
+## Getting Started
 
 ```bash
-cp .env.example .env
-docker compose up --build
-```
-
-Frontend: http://localhost:5173  
-Backend API: http://localhost:8000/docs
-
-## Local Backend
-
-```bash
-cd backend
-python -m venv .venv
-.venv\Scripts\activate
-pip install -e ".[dev]"
-pytest
-uvicorn app.main:app --reload
-```
-
-## Local Frontend
-
-```bash
-cd frontend
 npm install
 npm run dev
-npm test
 ```
 
-## MVP Workflows Included
+## Verification
 
-- Register, login, refresh, and current-user profile endpoints
-- Onboarding profile update
-- Subject, skill, prerequisite graph, mastery, and recommendations APIs
-- Placement assessment lifecycle
-- Practice session with adaptive answer feedback
-- Deterministic math expression equivalence and step validation
-- Graduated tutor hint ladder
-- Quest and boss battle progression
-- AI expedition planning with transparent rationale
-- Writing Studio structured feedback and revision versions
-- Learner progress analytics
-- Teacher classrooms and assignments
-- Admin content review queue
+```bash
+npm run lint
+npm test
+npm run build
+```
 
-The deterministic fallback keeps the platform usable without external AI credentials. Production model providers can be added behind `AIProvider` without changing route contracts.
+The end-to-end suite uses Playwright and Chromium. Install its browser once, then run the full quality gate:
 
+```bash
+npm run test:e2e:install
+npm run test:e2e
+npm run check
+```
+
+`npm run check` runs lint, unit tests, the production build, and browser tests. The browser suite starts its own Vite server on port 5199.
+
+## Optional Cloud Backup
+
+Local mode works without a cloud project. To enable account-backed private backups, configure Supabase by following [docs/backend-setup.md](docs/backend-setup.md). Never put a Supabase secret or service-role key in this browser app.
+
+## Local Data
+
+Workspace data is saved under the versioned `wheelforge_data_v1` key in browser local storage. Use Settings to export a backup before clearing site data or moving to another browser.

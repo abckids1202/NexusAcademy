@@ -1,0 +1,92 @@
+import type { ChainTemplate } from "../types";
+
+export const chainTemplates: ChainTemplate[] = [
+  {
+    id: "fantasy-story-generator",
+    title: "Fantasy Story Generator",
+    description: "Spin a faction, character, location, and conflict into a fantasy story seed.",
+    category: "creative",
+    steps: [
+      {
+        title: "Faction",
+        wheelTemplateId: "fantasy-factions",
+        order: 0,
+        isRequired: true,
+        autoSpinAfterPrevious: false,
+        delayBeforeSpinMs: 700,
+      },
+      {
+        title: "Character",
+        wheelTemplateId: "fantasy-characters",
+        order: 1,
+        isRequired: true,
+        autoSpinAfterPrevious: false,
+        delayBeforeSpinMs: 700,
+      },
+      {
+        title: "Location",
+        wheelTemplateId: "fantasy-locations",
+        order: 2,
+        isRequired: true,
+        autoSpinAfterPrevious: false,
+        delayBeforeSpinMs: 700,
+      },
+      {
+        title: "Conflict",
+        wheelTemplateId: "fantasy-conflicts",
+        order: 3,
+        isRequired: true,
+        autoSpinAfterPrevious: false,
+        delayBeforeSpinMs: 700,
+      },
+    ],
+  },
+  {
+    id: "writing-prompt-generator",
+    title: "Writing Prompt Generator",
+    description: "Create a compact writing prompt from genre, protagonist, setting, conflict, and mood.",
+    category: "creative",
+    steps: [
+      {
+        title: "Genre",
+        wheelTemplateId: "writing-genre",
+        order: 0,
+        isRequired: true,
+        autoSpinAfterPrevious: false,
+        delayBeforeSpinMs: 500,
+      },
+      {
+        title: "Protagonist",
+        wheelTemplateId: "writing-protagonist",
+        order: 1,
+        isRequired: true,
+        autoSpinAfterPrevious: false,
+        delayBeforeSpinMs: 500,
+      },
+      {
+        title: "Setting",
+        wheelTemplateId: "writing-setting",
+        order: 2,
+        isRequired: true,
+        autoSpinAfterPrevious: false,
+        delayBeforeSpinMs: 500,
+      },
+      {
+        title: "Conflict",
+        wheelTemplateId: "writing-conflict",
+        order: 3,
+        isRequired: true,
+        autoSpinAfterPrevious: false,
+        delayBeforeSpinMs: 500,
+      },
+      {
+        title: "Mood",
+        wheelTemplateId: "writing-mood",
+        order: 4,
+        isRequired: true,
+        autoSpinAfterPrevious: false,
+        delayBeforeSpinMs: 500,
+      },
+    ],
+  },
+];
