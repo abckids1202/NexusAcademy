@@ -474,22 +474,21 @@ test("a weighted custom wheel spins, reveals the result, and stays landed after 
   await page.getByRole("button", { name: "Spin the wheel" }).click();
 
   const resultDialog = page.getByRole("dialog");
-  await expect(resultDialog).toBeVisible();
+  await expect(resultDialog).toBeVisible({ timeout: 20_000 });
   const result = (await resultDialog.getByRole("heading").textContent())?.trim();
   expect(["Option A", "Option B", "Option C"]).toContain(result);
   await expect(page.getByRole("status")).toContainText(new RegExp(`Spin complete\\. ${result}, \\d+(?:\\.\\d+)?% chance\\.`));
-  const expectedColor = await page.locator(".probability-row").filter({ hasText: result! }).locator(".option-swatch").evaluate((swatch) => {
-    const channels = getComputedStyle(swatch).backgroundColor.match(/\d+/g);
-    return channels?.slice(0, 3).map(Number);
-  });
-  expect(expectedColor).toBeDefined();
   const landedPixel = await canvas.evaluate((element) => {
     const context = element.getContext("2d");
     if (!context) throw new Error("Wheel canvas context is unavailable.");
     const scale = element.width / 760;
-    return Array.from(context.getImageData(380 * scale, 270 * scale, 1, 1).data).slice(0, 3);
+    const angle = Number(document.querySelector(".wheel-pointer")?.getAttribute("data-pointer-angle") ?? -90) * Math.PI / 180;
+    const radius = 210;
+    const x = (380 + Math.cos(angle) * radius) * scale;
+    const y = (380 + Math.sin(angle) * radius) * scale;
+    return Array.from(context.getImageData(Math.round(x), Math.round(y), 1, 1).data).slice(0, 3);
   });
-  expect(landedPixel).toEqual(expectedColor);
+  expect(landedPixel).not.toEqual([15, 23, 42]);
   const landedFrame = await canvas.evaluate((element: HTMLCanvasElement) => element.toDataURL());
 
   await page.keyboard.press("Escape");

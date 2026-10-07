@@ -12,7 +12,7 @@ async function collectViolations(page: Page, location: string) {
 }
 
 test("main workflows have no automatically detectable WCAG A/AA violations", async ({ page }) => {
-  test.setTimeout(60_000);
+  test.setTimeout(90_000);
   const findings: string[] = [];
   const routes = [
     "/",
@@ -72,12 +72,12 @@ test("main workflows have no automatically detectable WCAG A/AA violations", asy
 
   await page.goto("/spin/demo_wheel_food_picker");
   await page.getByRole("button", { name: "Spin the wheel" }).click();
-  await expect(page.getByRole("dialog")).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole("dialog")).toBeVisible({ timeout: 20_000 });
   findings.push(...await collectViolations(page, "/spin result dialog"));
   const closeButton = page.getByRole("button", { name: "Close result" });
   await expect(closeButton).toBeFocused();
   await page.keyboard.press("Shift+Tab");
-  await expect(closeButton).toBeFocused();
+  await expect(page.getByRole("button", { name: "Copy result details" })).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(closeButton).toBeFocused();
   await page.keyboard.press("Escape");

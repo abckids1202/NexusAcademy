@@ -9,10 +9,11 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "test": "vitest run",
+    "audit": "npm audit --audit-level=high",
     "test:e2e": "playwright test",
     "test:e2e:cloud": "playwright test --config playwright.cloud.config.ts",
     "test:e2e:install": "playwright install chromium",
-    "check": "npm run lint && npm test && npm run build && npm run test:e2e && npm run test:e2e:cloud"
+    "check": "npm run lint && npm test && npm run audit && npm run build && npm run test:e2e && npm run test:e2e:cloud"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",

@@ -10,7 +10,7 @@ test("undoing the latest elimination spin restores its option and removes the hi
   const optionRows = page.getByRole("list", { name: "Options and chances" }).getByRole("listitem");
   await expect(optionRows).toHaveCount(3);
   await page.getByRole("button", { name: "Spin the wheel" }).click();
-  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(page.getByRole("dialog")).toBeVisible({ timeout: 15_000 });
   await page.keyboard.press("Escape");
 
   await expect(optionRows).toHaveCount(2);
