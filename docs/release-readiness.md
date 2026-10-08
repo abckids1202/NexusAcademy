@@ -30,6 +30,7 @@
 - Local persistence classifies quota exhaustion separately from generic write failures and surfaces recovery guidance to export a backup and clear unused data.
 - Cloud backup writes re-read the current revision and use an `updated_at` compare-and-swap for existing records, rejecting stale browser uploads instead of silently overwriting a newer backup.
 - A repeatable `npm run verify:supabase:staging` script exercises two temporary authenticated users against a configured staging project, verifies own-row CRUD and cross-account read/update/delete isolation, and cleans up the test users with the service role.
+- Spin and auto-spin workflows expose an accessible percentage progress bar during long animations, announce collected results, stop the queue only after the current spin, and lock wheel selection while a queue is active.
 
 ## Release decision
 

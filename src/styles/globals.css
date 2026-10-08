@@ -773,6 +773,43 @@ textarea {
   color: var(--muted);
 }
 
+.spin-progress-region {
+  display: grid;
+  gap: 7px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: rgba(12, 22, 48, 0.68);
+}
+
+.spin-progress-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.spin-progress-label strong {
+  color: var(--accent);
+}
+
+.spin-progress-track {
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.2);
+}
+
+.spin-progress-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width 100ms linear;
+}
+
 .danger-link {
   color: #fca5a5;
 }

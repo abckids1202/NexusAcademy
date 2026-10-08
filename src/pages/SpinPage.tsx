@@ -53,6 +53,7 @@ export function SpinPage() {
   const [rotationDegrees, setRotationDegrees] = useState(0);
   const [pointerAngleDegrees, setPointerAngleDegrees] = useState(-90);
   const [isSpinning, setIsSpinning] = useState(false);
+  const [spinProgress, setSpinProgress] = useState(0);
   const [selectedOptionId, setSelectedOptionId] = useState<string>();
   const [currentResult, setCurrentResult] = useState<SpinResult | null>(null);
   const [liveAnnouncement, setLiveAnnouncement] = useState("");
@@ -131,6 +132,7 @@ export function SpinPage() {
     const startedAt = performance.now();
 
     setIsSpinning(true);
+    setSpinProgress(0);
     setPointerAngleDegrees(nextPointerAngle);
     setSelectedOptionId(undefined);
     setCurrentResult(null);
@@ -139,6 +141,7 @@ export function SpinPage() {
     const animate = (timestamp: number) => {
       const elapsed = timestamp - startedAt;
       const progress = durationMs === 0 ? 1 : Math.min(elapsed / durationMs, 1);
+      setSpinProgress(Math.round(progress * 100));
       const easedProgress = easeOutCubic(progress);
       const nextRotation =
         startRotation + (targetRotation - startRotation) * easedProgress;
@@ -166,6 +169,7 @@ export function SpinPage() {
       setRotationDegrees(targetRotation);
       setSelectedOptionId(selection.option.id);
       setIsSpinning(false);
+      setSpinProgress(100);
       if (isAutomated && autoSpinRef.current) {
         autoSpinRef.current.results = [...autoSpinRef.current.results, result];
         autoSpinRef.current.remaining -= 1;
@@ -338,12 +342,12 @@ export function SpinPage() {
                 />
               </div>
               <div className="auto-spin-panel" aria-label="Automatic spin controls">
-                <div className="auto-spin-heading"><div><strong><Zap size={16} /> Auto-spin</strong><span>Run repeated spins and collect the results without opening each result modal.</span></div>{autoSpinActive && <span className="auto-spin-status">{autoSpinRef.current?.remaining ?? 0} left</span>}</div>
+                <div className="auto-spin-heading"><div><strong><Zap size={16} /> Auto-spin</strong><span>Run repeated spins and collect the results without opening each result modal.</span></div>{autoSpinActive && <span className="auto-spin-status" role="status">{autoSpinRef.current?.remaining ?? 0} left</span>}</div>
                 <div className="auto-spin-controls">
                   <label className="field-stack"><span>Number of spins</span><input className="number-field" type="number" min="1" max="25" value={autoSpinCount} disabled={autoSpinActive} onChange={(event) => setAutoSpinCount(event.target.value)} /></label>
                   {!autoSpinActive ? <button className="secondary-link" type="button" disabled={!canSpin || isSpinning} onClick={startAutoSpin}><Zap size={16} /> Start auto-spin</button> : <button className="secondary-link danger-link" type="button" onClick={stopAutoSpin}><Square size={15} /> Stop after current</button>}
                 </div>
-                {autoSpinResults.length > 0 && <div className="auto-spin-results" aria-live="polite"><strong>{autoSpinActive ? "Results so far" : "Auto-spin results"}</strong><ol>{autoSpinResults.map((result, index) => <li key={result.id}><span className="option-swatch" style={{ background: result.resultColor }} aria-hidden="true" /><span>{index + 1}. {result.resultLabel}</span></li>)}</ol></div>}
+                {autoSpinResults.length > 0 && <div className="auto-spin-results" aria-live="polite"><strong>{autoSpinActive ? `Results so far · ${autoSpinResults.length} collected` : "Auto-spin results"}</strong><ol>{autoSpinResults.map((result, index) => <li key={result.id}><span className="option-swatch" style={{ background: result.resultColor }} aria-hidden="true" /><span>{index + 1}. {result.resultLabel}</span></li>)}</ol></div>}
               </div>
               {!canSpin ? (
                 <div className="spin-empty-state">
@@ -368,6 +372,7 @@ export function SpinPage() {
               id="wheel-select"
               className="select-field"
               value={selectedWheel?.id ?? ""}
+              disabled={isSpinning || autoSpinActive}
               onChange={(event) => {
                 const nextWheel = wheels.find((wheel) => wheel.id === event.target.value);
                 setSelectedWheelId(event.target.value);
@@ -452,6 +457,11 @@ export function SpinPage() {
         onSpinAgain={() => { setCurrentResult(null); handleSpin(); }}
         returnFocusRef={spinButtonRef}
       />
+
+            {isSpinning && <div className="spin-progress-region" role="status" aria-live="polite">
+              <div className="spin-progress-label"><span>Spin in progress</span><strong>{spinProgress}%</strong></div>
+              <div className="spin-progress-track" role="progressbar" aria-label="Spin progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={spinProgress} aria-valuetext={`${spinProgress}% complete`}><span style={{ width: `${spinProgress}%` }} /></div>
+            </div>}
     </div>
   );
 }
