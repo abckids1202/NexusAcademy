@@ -39,6 +39,7 @@ export function TournamentsPage() {
   const [participantText, setParticipantText] = useState("");
   const [selectedParticipantIds, setSelectedParticipantIds] = useState<string[]>([]);
   const [rosterMetadata, setRosterMetadata] = useState<Record<string, TournamentRosterMetadata>>({});
+  const [teamCount, setTeamCount] = useState(2);
   const [seeding, setSeeding] = useState<TournamentSeeding>("entry-order");
   const [byePolicy, setByePolicy] = useState<TournamentByePolicy>("automatic");
   const [withdrawalPolicy, setWithdrawalPolicy] = useState<TournamentWithdrawalPolicy>("advance-opponent");
@@ -140,6 +141,17 @@ export function TournamentsPage() {
     invalidatePreview();
   }
 
+  function assignBalancedTeams() {
+    const count = Math.max(2, Math.min(teamCount, parsedParticipants.names.length));
+    const teams = shuffleParticipants(parsedParticipants.names).reduce<Record<string, TournamentRosterMetadata>>((result, name, index) => {
+      const key = name.toLocaleLowerCase();
+      result[key] = { ...rosterMetadata[key], group: `Team ${(index % count) + 1}` };
+      return result;
+    }, {});
+    setRosterMetadata((current) => ({ ...current, ...teams }));
+    invalidatePreview();
+  }
+
   function handlePreview(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
@@ -204,6 +216,10 @@ export function TournamentsPage() {
               </div>;
             })}</div>
             <button className="secondary-link" type="button" onClick={assignRandomSeats}><Shuffle size={16} /> Assign random seats</button>
+            <div className="hero-actions roster-team-actions">
+              <label className="field-stack"><span>Teams</span><input className="text-field" type="number" min="2" max={parsedParticipants.names.length} step="1" value={teamCount} onChange={(event) => setTeamCount(Math.max(2, Number(event.target.value) || 2))} /></label>
+              <button className="secondary-link" type="button" disabled={parsedParticipants.names.length < 2} onClick={assignBalancedTeams}><Shuffle size={16} /> Split into balanced teams</button>
+            </div>
           </fieldset>}
           <label className="secondary-link file-button"><Upload size={16} /> Preview participant CSV<input type="file" accept=".csv,text/csv" onChange={(event) => { void previewParticipantsCsv(event.target.files?.[0]); event.currentTarget.value = ""; }} /></label>
           {participantCsvPreview && <section className="csv-option-preview" aria-label="Participant CSV preview">

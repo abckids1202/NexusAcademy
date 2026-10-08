@@ -39,6 +39,18 @@ test("participant CSV preview can map a name column", async ({ page }) => {
   await expect(page.getByLabel(/Participants/)).toHaveValue("Avery Chen\nJordan Lee");
 });
 
+test("roster preparation can split participants into balanced team labels", async ({ page }) => {
+  await page.goto("/tournaments");
+  await page.getByLabel("Tournament name").fill("Team draw");
+  await page.getByLabel(/Participants/).fill("Avery\nJordan\nSam\nTaylor");
+  await page.getByLabel("Teams").fill("2");
+  await page.getByRole("button", { name: "Split into balanced teams" }).click();
+  await page.getByRole("button", { name: "Preview tournament" }).click();
+  const preview = page.getByRole("region", { name: "Tournament preview" });
+  await expect(preview).toContainText("Team 1");
+  await expect(preview).toContainText("Team 2");
+});
+
 test("chance-based tournament draw reviews ticket odds, stays out of match results, and records undo", async ({ page }) => {
   await createTournament(page, "Prize night", ["Avery", "Jordan", "Sam", "Taylor"], "single-elimination");
   await page.getByRole("button", { name: "Set up chance-based draw" }).click();
