@@ -5,7 +5,7 @@ import { PageHeader } from "../components/common/PageHeader";
 import { ShellCard } from "../components/common/ShellCard";
 import { TournamentConditionSpinner } from "../components/tournament/TournamentConditionSpinner";
 import { TournamentWinnerDrawPanel } from "../components/tournament/TournamentWinnerDrawPanel";
-import { correctTournamentMatchScore, correctTournamentMatchWinner, drawTournamentWinner, recordTournamentMatchBye, recordTournamentMatchCondition, recordTournamentMatchScore, recordTournamentMatchWinner, undoTournamentResult, undoTournamentWinnerDraw, updateTournamentSetup } from "../services/tournamentService";
+import { correctTournamentMatchScore, correctTournamentMatchWinner, drawTournamentWinner, recordTournamentMatchBye, recordTournamentMatchCondition, recordTournamentMatchScore, recordTournamentMatchWinner, undoTournamentResult, undoTournamentWinnerDraw, updateTournamentSetup, withdrawTournamentParticipantFromMatch } from "../services/tournamentService";
 import type { RoundRobinScoring, Tournament, TournamentConditionDraw, TournamentEvent } from "../types";
 import { useWheels } from "../hooks/useWheels";
 import { useTournaments } from "../hooks/useTournaments";
@@ -65,6 +65,9 @@ function describeTournamentEvent(event: TournamentEvent, participants: Map<strin
     const participant = participants.get(event.participantId ?? "") ?? "Unknown participant";
     const labels = { expected: "Expected", "checked-in": "Checked in", "not-present": "Not present" };
     return `${participant}: attendance changed from ${labels[event.previousAttendanceStatus ?? "expected"]} to ${labels[event.attendanceStatus ?? "expected"]}. No match result or pairing changed.`;
+  }
+  if (event.type === "participant-withdrawn") {
+    return `${participants.get(event.participantId ?? "") ?? "Unknown participant"} withdrew from the tournament.`;
   }
   if (event.type === "winner-drawn" && event.winnerDraw) {
     const winners = event.winnerDraw.winnerIds.map((winnerId, index) => {
@@ -215,6 +218,16 @@ export function TournamentDetailPage() {
       setMessage(`${participantName} confirmed as advancing on a bye.`);
     } catch (reason) {
       setMessage(reason instanceof Error ? reason.message : "Could not confirm the bye.");
+    }
+  }
+
+  function withdrawParticipant(participantId: string, participantName: string) {
+    if (!tournament || !window.confirm(`Withdraw ${participantName} from this tournament? ${tournament.withdrawalPolicy === "advance-opponent" ? "Pending opponents will advance where possible." : "Pending fixtures will remain unchanged."}`)) return;
+    try {
+      withdrawTournamentParticipantFromMatch(tournament.id, participantId);
+      setMessage(`${participantName} was withdrawn from the tournament.`);
+    } catch (reason) {
+      setMessage(reason instanceof Error ? reason.message : "Could not withdraw that participant.");
     }
   }
 
@@ -451,6 +464,12 @@ export function TournamentDetailPage() {
         </div>
       </form>
     </ShellCard>}
+    <ShellCard title="Participant management" description={`Withdrawal policy: ${tournament.withdrawalPolicy === "advance-opponent" ? "advance opponents through affected pending fixtures" : "preserve pending fixtures"}. Each withdrawal is logged with the tournament record.`}>
+      <div className="project-list">{tournament.participants.map((participant) => <article className="project-row" key={participant.id}>
+        <div className="project-copy"><strong>{participant.name}</strong><span>{participant.withdrawnAt ? `Withdrawn ${new Date(participant.withdrawnAt).toLocaleString()}` : participant.attendanceStatus === "checked-in" ? "Checked in" : "Active"}</span></div>
+        {!participant.withdrawnAt && <button className="secondary-link" type="button" onClick={() => withdrawParticipant(participant.id, participant.name)}>Withdraw</button>}
+      </article>)}</div>
+    </ShellCard>
     <ShellCard title={tournament.format === "round-robin" ? "Schedule" : "Bracket"} description={tournament.format === "round-robin" ? `Every participant plays every other participant. Points are ${tournament.scoring?.winPoints ?? 3} for a win, ${tournament.scoring?.drawPoints ?? 1} for a draw, and ${tournament.scoring?.lossPoints ?? 0} for a loss. ${tournament.roundRobinTiebreaker === "head-to-head" ? "Overall-point ties are ranked by their head-to-head mini-table; unresolved ties share rank." : "Wins break point ties; seed sets display order for otherwise tied records."}` : "Record the real match winner. Byes advance automatically and never count as played matches."}>
       <div className="tournament-bracket" aria-label={tournament.format === "round-robin" ? "Round-robin schedule" : "Single-elimination bracket"}>
         {tournament.rounds.map((round) => <section className="tournament-round" key={round.roundNumber} aria-label={getTournamentRoundLabel(round.roundNumber, tournament.rounds.length, tournament.format)}>

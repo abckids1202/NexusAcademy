@@ -425,6 +425,16 @@ test("tournament preview shows round-robin byes and creates the exact reviewed r
   await expect(page.getByText("0 of 3 matches recorded")).toBeVisible();
 });
 
+test("participant withdrawal follows the reviewed policy and records the decision", async ({ page }) => {
+  await createTournament(page, "Withdrawal Night", ["Alice", "Blair", "Casey", "Dana"], "single-elimination");
+  page.on("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Withdraw" }).first().click();
+  await expect(page.getByText(/Alice withdrew from the tournament/)).toBeVisible();
+  await expect(page.locator(".tournament-bye")).toHaveCount(1);
+  await expect(page.locator(".tournament-bye")).not.toContainText("Alice");
+  await expect(page.getByRole("heading", { name: "Participant management" })).toBeVisible();
+});
+
 test("round-robin setup can be edited and the schedule is regenerated", async ({ page }) => {
   await createTournament(page, "League Night", ["Avery", "Jordan", "Sam"], "round-robin");
   await expect(page.getByText("0 of 3 matches recorded")).toBeVisible();

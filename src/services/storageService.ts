@@ -117,6 +117,7 @@ function normalizeData(value: unknown): WheelForgeData {
             format: value.format ?? "single-elimination",
             roundRobinTiebreaker: value.roundRobinTiebreaker ?? "seed",
             byePolicy: value.byePolicy ?? "automatic",
+            withdrawalPolicy: value.withdrawalPolicy ?? "advance-opponent",
             scoring: value.scoring ?? { ...defaultRoundRobinScoring },
             events,
             nextEventSequence,
@@ -341,7 +342,7 @@ function isValidTournamentWinnerDraw(value: unknown): boolean {
 function isValidTournamentEvent(value: unknown): boolean {
   if (!isRecord(value) || typeof value.id !== "string" ||
     typeof value.sequence !== "number" || !Number.isInteger(value.sequence) || value.sequence < 1 ||
-    !isOneOf(value.type, ["result-recorded", "result-corrected", "result-undone", "bye-confirmed", "condition-drawn", "winner-drawn", "winner-draw-undone", "participant-attendance-changed"] as const) ||
+    !isOneOf(value.type, ["result-recorded", "result-corrected", "result-undone", "bye-confirmed", "condition-drawn", "winner-drawn", "winner-draw-undone", "participant-attendance-changed", "participant-withdrawn"] as const) ||
     typeof value.createdAt !== "string" || Number.isNaN(Date.parse(value.createdAt)) ||
     !hasOptionalString(value, "matchId") || !hasOptionalString(value, "relatedEventId") ||
     (value.roundNumber !== undefined && (typeof value.roundNumber !== "number" || !Number.isInteger(value.roundNumber))) ||
@@ -397,7 +398,8 @@ function isValidTournamentEvent(value: unknown): boolean {
     !isOneOf(value.attendanceStatus, ["expected", "checked-in", "not-present"] as const) ||
     value.previousAttendanceStatus === value.attendanceStatus
   )) return false;
-  if (value.type !== "participant-attendance-changed" && (
+  if (value.type === "participant-withdrawn" && (typeof value.participantId !== "string" || !value.participantId.trim())) return false;
+  if (value.type !== "participant-attendance-changed" && value.type !== "participant-withdrawn" && (
     value.participantId !== undefined || value.previousAttendanceStatus !== undefined || value.attendanceStatus !== undefined
   )) return false;
   if ((value.type === "winner-drawn" || value.type === "winner-draw-undone") &&
@@ -414,6 +416,7 @@ function isValidTournament(value: unknown): boolean {
     (value.format !== undefined && !isOneOf(value.format, ["single-elimination", "round-robin"] as const)) ||
     (value.roundRobinTiebreaker !== undefined && !isOneOf(value.roundRobinTiebreaker, ["seed", "head-to-head"] as const)) ||
     (value.byePolicy !== undefined && !isOneOf(value.byePolicy, ["automatic", "manual"] as const)) ||
+    (value.withdrawalPolicy !== undefined && !isOneOf(value.withdrawalPolicy, ["advance-opponent", "preserve-fixtures"] as const)) ||
     (value.scoring !== undefined && !isValidRoundRobinScoring(value.scoring)) ||
     !isOneOf(value.seeding, ["entry-order", "random", "manual"] as const) ||
     !isOneOf(value.status, ["in_progress", "completed"] as const) ||
@@ -441,11 +444,11 @@ function isValidTournament(value: unknown): boolean {
   const validParticipants = value.participants.every((participant) => isRecord(participant) &&
     typeof participant.id === "string" && typeof participant.name === "string" &&
     typeof participant.seed === "number" && Number.isInteger(participant.seed) &&
-    hasOptionalString(participant, "group") && hasOptionalString(participant, "role") &&
+    hasOptionalString(participant, "group") && hasOptionalString(participant, "role") && hasOptionalString(participant, "withdrawnAt") &&
     (participant.seat === undefined || (typeof participant.seat === "number" && Number.isInteger(participant.seat) && participant.seat > 0)) &&
     (participant.attendanceStatus === undefined || isOneOf(participant.attendanceStatus, ["expected", "checked-in", "not-present"] as const)));
   const participantIds = new Set(value.participants.filter(isRecord).map((participant) => participant.id));
-  if (events.some((event) => isRecord(event) && event.type === "participant-attendance-changed" &&
+  if (events.some((event) => isRecord(event) && (event.type === "participant-attendance-changed" || event.type === "participant-withdrawn") &&
     (typeof event.participantId !== "string" || !participantIds.has(event.participantId)))) return false;
   if (events.some((event) => isRecord(event) &&
     ((typeof event.forfeitingParticipantId === "string" && !participantIds.has(event.forfeitingParticipantId)) ||

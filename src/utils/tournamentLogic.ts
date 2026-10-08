@@ -11,6 +11,7 @@ import type {
   RoundRobinTiebreaker,
   TournamentSeeding,
   TournamentByePolicy,
+  TournamentWithdrawalPolicy,
   TournamentWinnerDraw,
 } from "../types";
 import { createId } from "./ids";
@@ -23,6 +24,7 @@ type TournamentOptions = {
   id?: string;
   seeding?: TournamentSeeding;
   byePolicy?: TournamentByePolicy;
+  withdrawalPolicy?: TournamentWithdrawalPolicy;
   roundRobinTiebreaker?: RoundRobinTiebreaker;
   scoring?: RoundRobinScoring;
   createdAt?: string;
@@ -112,6 +114,7 @@ function createTournamentBase(
     scoring: { ...(prepared.options.scoring ?? defaultRoundRobinScoring) },
     seeding: prepared.options.seeding ?? "entry-order",
     byePolicy: prepared.options.byePolicy ?? "automatic",
+    withdrawalPolicy: prepared.options.withdrawalPolicy ?? "advance-opponent",
     status: "in_progress",
     participants: prepared.participants,
     rounds,
@@ -429,6 +432,7 @@ export function updateTournamentSetup(
   roundRobinTiebreaker: RoundRobinTiebreaker = tournament.roundRobinTiebreaker ?? "seed",
   scoring: RoundRobinScoring = tournament.scoring ?? defaultRoundRobinScoring,
   byePolicy: TournamentByePolicy = tournament.byePolicy ?? "automatic",
+  withdrawalPolicy: TournamentWithdrawalPolicy = tournament.withdrawalPolicy ?? "advance-opponent",
 ): Tournament {
   if (!canEditTournamentSetup(tournament)) {
     throw new Error("Tournament setup is locked after event activity has been recorded.");
@@ -469,6 +473,7 @@ export function updateTournamentSetup(
     roundRobinTiebreaker,
     scoring,
     byePolicy,
+    withdrawalPolicy,
     createdAt: tournament.createdAt,
   };
   const updated = format === "round-robin"
@@ -597,6 +602,47 @@ export function recordTournamentBye(
   const eventUpdate = appendTournamentEvent(tournament, createResultEvent("bye-confirmed", rounds[roundIndex], match, completedAt, { winnerId }));
   const isComplete = rounds.every((round) => round.matches.every((roundMatch) => roundMatch.status !== "pending"));
   return { ...tournament, rounds, ...eventUpdate, status: isComplete ? "completed" : "in_progress", nextResultSequence: tournament.nextResultSequence + 1, updatedAt: completedAt, ...(isComplete ? { completedAt } : { completedAt: undefined }) };
+}
+
+export function withdrawTournamentParticipant(
+  tournament: Tournament,
+  participantId: string,
+  withdrawnAt = new Date().toISOString(),
+): Tournament {
+  if (tournament.status === "completed") throw new Error("This tournament is already complete.");
+  const participant = tournament.participants.find((item) => item.id === participantId);
+  if (!participant) throw new Error("Participant not found.");
+  if (participant.withdrawnAt) throw new Error("This participant has already withdrawn.");
+  if (Number.isNaN(Date.parse(withdrawnAt))) throw new Error("Withdrawal timestamp is invalid.");
+
+  const participants = tournament.participants.map((item) => item.id === participantId
+    ? { ...item, withdrawnAt, attendanceStatus: "not-present" as const }
+    : item);
+  const rounds = tournament.rounds.map((round) => ({ ...round, matches: round.matches.map((match) => ({ ...match })) }));
+  if ((tournament.withdrawalPolicy ?? "advance-opponent") === "advance-opponent") {
+    rounds.forEach((round, roundIndex) => round.matches.forEach((match, matchIndex) => {
+      if (match.status !== "pending" || (match.participantAId !== participantId && match.participantBId !== participantId)) return;
+      const opponentId = match.participantAId === participantId ? match.participantBId : match.participantAId;
+      if (!opponentId) {
+        if (match.participantAId === participantId) delete match.participantAId;
+        if (match.participantBId === participantId) delete match.participantBId;
+        return;
+      }
+      match.status = "bye";
+      match.winnerId = opponentId;
+      if (match.participantAId === participantId) delete match.participantAId;
+      if (match.participantBId === participantId) delete match.participantBId;
+      match.completedAt = withdrawnAt;
+      if (tournament.format !== "round-robin") advanceByeWinner(rounds, roundIndex, matchIndex, opponentId);
+    }));
+  }
+  const eventUpdate = appendTournamentEvent(tournament, {
+    type: "participant-withdrawn",
+    participantId,
+    createdAt: withdrawnAt,
+  });
+  const isComplete = rounds.every((round) => round.matches.every((match) => match.status !== "pending"));
+  return { ...tournament, participants, rounds, ...eventUpdate, status: isComplete ? "completed" : "in_progress", updatedAt: withdrawnAt, ...(isComplete ? { completedAt: withdrawnAt } : { completedAt: undefined }) };
 }
 
 function validateMatchScore(score: number): void {

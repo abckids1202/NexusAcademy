@@ -23,6 +23,7 @@ import {
   setTournamentParticipantAttendance,
   recordTournamentForfeit,
   recordTournamentBye,
+  withdrawTournamentParticipant,
 } from "./tournamentLogic";
 
 function entrants(count: number): Array<Pick<TournamentParticipant, "id" | "name">> {
@@ -650,5 +651,20 @@ describe("match results and advancement", () => {
   it("supports manual byes in round-robin schedules", () => {
     const tournament = createRoundRobinTournament("Manual Bye League", entrants(3), { byePolicy: "manual" });
     expect(tournament.rounds.flatMap((round) => round.matches).filter((match) => match.status === "pending" && match.participantAId && !match.participantBId)).toHaveLength(3);
+  });
+
+  it("withdraws a participant and advances pending opponents under the configured policy", () => {
+    const initial = createSingleEliminationTournament("Withdrawal Cup", entrants(4), { withdrawalPolicy: "advance-opponent" });
+    const target = initial.participants[0];
+    const withdrawn = withdrawTournamentParticipant(initial, target.id, "2026-01-03T00:00:00.000Z");
+    expect(withdrawn.participants.find((participant) => participant.id === target.id)?.withdrawnAt).toBe("2026-01-03T00:00:00.000Z");
+    expect(withdrawn.events.at(-1)?.type).toBe("participant-withdrawn");
+    expect(withdrawn.rounds[0].matches.some((match) => match.status === "bye" && match.winnerId !== target.id)).toBe(true);
+  });
+
+  it("can preserve pending fixtures when a participant withdraws", () => {
+    const initial = createRoundRobinTournament("Preserved League", entrants(4), { withdrawalPolicy: "preserve-fixtures" });
+    const withdrawn = withdrawTournamentParticipant(initial, initial.participants[0].id, "2026-01-03T00:00:00.000Z");
+    expect(withdrawn.rounds.flatMap((round) => round.matches).some((match) => match.status === "pending" && (match.participantAId === initial.participants[0].id || match.participantBId === initial.participants[0].id))).toBe(true);
   });
 });
