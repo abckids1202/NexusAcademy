@@ -2,6 +2,7 @@ import { templatePacks } from "../data/templatePacks";
 import type { ChainTemplate, TemplatePack, Wheel, WheelTemplate, SpinChain } from "../types";
 import { createId } from "../utils/ids";
 import { loadData, saveData } from "./storageService";
+import { getTemplatePackValidationErrors } from "../utils/templatePackValidation";
 
 const MAX_RECENT = 8;
 
@@ -41,7 +42,7 @@ export function togglePackFavorite(packId: string): boolean {
 export function previewTemplatePackInstall(packId: string): TemplatePackInstallPreview | undefined {
   const pack = getTemplatePack(packId);
   if (!pack) return undefined;
-  const warnings: string[] = [];
+  const warnings: string[] = getTemplatePackValidationErrors(pack);
   const missing = pack.chains.flatMap((item) => item.steps.map((step) => step.wheelTemplateId)).filter((id) => !pack.wheels.some((item) => item.id === id));
   if (missing.length) warnings.push(`Missing wheel references: ${[...new Set(missing)].join(", ")}.`);
   return { pack, wheelCount: pack.wheels.length, chainCount: pack.chains.length, warnings };
@@ -50,6 +51,8 @@ export function previewTemplatePackInstall(packId: string): TemplatePackInstallP
 export function installTemplatePack(packId: string): { wheels: Wheel[]; chains: SpinChain[]; tournamentPreset?: TemplatePack["tournamentPreset"] } | undefined {
   const pack = getTemplatePack(packId);
   if (!pack) return undefined;
+  const validationErrors = getTemplatePackValidationErrors(pack);
+  if (validationErrors.length > 0) throw new Error(`Cannot install ${pack.title}: ${validationErrors.join(" ")}`);
   const data = loadData();
   const wheelIds = new Map<string, string>();
   const wheels: Wheel[] = [];
@@ -114,12 +117,11 @@ export function exportTemplatePack(packId: string): string {
 export function importTemplatePack(json: string): TemplatePack {
   let parsed: unknown;
   try { parsed = JSON.parse(json); } catch { throw new Error("This is not valid pack JSON."); }
-  if (!parsed || typeof parsed !== "object" || !Array.isArray((parsed as { wheels?: unknown }).wheels) || !Array.isArray((parsed as { chains?: unknown }).chains)) {
-    throw new Error("This file is not a supported WheelForge template pack.");
-  }
+  const validationErrors = getTemplatePackValidationErrors(parsed);
+  if (validationErrors.length > 0) throw new Error(`This file is not a supported WheelForge template pack. ${validationErrors.join(" ")}`);
   const source = parsed as TemplatePack;
   const now = new Date().toISOString();
-  const imported: TemplatePack = { ...source, id: createId("pack"), source: "user", version: source.version || 1, createdAt: now, updatedAt: now };
+  const imported: TemplatePack = { ...source, id: createId("pack"), source: "user", version: source.version, createdAt: now, updatedAt: now };
   const data = loadData(); saveData({ ...data, userTemplatePacks: [imported, ...data.userTemplatePacks] });
   return imported;
 }

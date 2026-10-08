@@ -4,6 +4,7 @@ import type { WheelForgeData } from "../types";
 import type { UserSettings } from "../types";
 import { defaultRoundRobinScoring } from "../data/tournamentDefaults";
 import { isValidRoundRobinScoring } from "../utils/tournamentLogic";
+import { isValidTemplatePack as isValidTemplatePackShape } from "../utils/templatePackValidation";
 
 export const STORAGE_KEY = "wheelforge_data_v1";
 
@@ -511,18 +512,7 @@ function isValidSettings(value: Record<string, unknown>): boolean {
 }
 
 function isValidTemplatePack(value: unknown): boolean {
-  if (!isRecord(value) || typeof value.id !== "string" || typeof value.title !== "string" ||
-    typeof value.description !== "string" || !isOneOf(value.category, ["classroom", "giveaway", "creative", "game", "tournament"] as const) ||
-    !Array.isArray(value.tags) || !value.tags.every((tag) => typeof tag === "string") ||
-    typeof value.version !== "number" || value.source !== "user" || typeof value.createdAt !== "string" ||
-    typeof value.updatedAt !== "string" || !Array.isArray(value.wheels) || !Array.isArray(value.chains)) return false;
-  const validWheelTemplate = (item: unknown) => isRecord(item) && typeof item.id === "string" &&
-    typeof item.title === "string" && typeof item.description === "string" && isRecord(item.wheel) &&
-    Array.isArray(item.wheel.options) && item.wheel.options.length >= 2;
-  const validChainTemplate = (item: unknown) => isRecord(item) && typeof item.id === "string" &&
-    typeof item.title === "string" && typeof item.description === "string" && Array.isArray(item.steps) &&
-    item.steps.every((step) => isRecord(step) && typeof step.title === "string" && typeof step.wheelTemplateId === "string");
-  return value.wheels.every(validWheelTemplate) && value.chains.every(validChainTemplate);
+  return isValidTemplatePackShape(value);
 }
 
 function isValidImport(value: unknown): value is WheelForgeData {
