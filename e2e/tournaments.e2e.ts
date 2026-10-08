@@ -51,6 +51,20 @@ test("roster preparation can split participants into balanced team labels", asyn
   await expect(preview).toContainText("Team 2");
 });
 
+test("single-elimination preview can include and label a third-place match", async ({ page }) => {
+  await page.goto("/tournaments");
+  await page.getByLabel("Tournament name").fill("Placement cup");
+  await page.getByLabel(/Participants/).fill("Avery\nJordan\nSam\nTaylor");
+  await page.getByLabel("Placement matches").selectOption("third-place");
+  await page.getByRole("button", { name: "Preview tournament" }).click();
+
+  const preview = page.getByRole("region", { name: "Tournament preview" });
+  await expect(preview).toContainText("Third-place match");
+  await expect(preview).toContainText("Loser of Semifinals match");
+  await page.getByRole("button", { name: "Create this tournament" }).click();
+  await expect(page.locator(".tournament-match-title").filter({ hasText: "Third-place match" })).toBeVisible();
+});
+
 test("chance-based tournament draw reviews ticket odds, stays out of match results, and records undo", async ({ page }) => {
   await createTournament(page, "Prize night", ["Avery", "Jordan", "Sam", "Taylor"], "single-elimination");
   await page.getByRole("button", { name: "Set up chance-based draw" }).click();

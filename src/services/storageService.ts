@@ -121,6 +121,7 @@ function normalizeData(value: unknown): WheelForgeData {
             roundRobinTiebreaker: value.roundRobinTiebreaker ?? "seed",
             byePolicy: value.byePolicy ?? "automatic",
             withdrawalPolicy: value.withdrawalPolicy ?? "advance-opponent",
+            thirdPlaceMatch: value.thirdPlaceMatch ?? false,
             scoring: value.scoring ?? { ...defaultRoundRobinScoring },
             events,
             nextEventSequence,
@@ -420,6 +421,7 @@ function isValidTournament(value: unknown): boolean {
     (value.roundRobinTiebreaker !== undefined && !isOneOf(value.roundRobinTiebreaker, ["seed", "head-to-head"] as const)) ||
     (value.byePolicy !== undefined && !isOneOf(value.byePolicy, ["automatic", "manual"] as const)) ||
     (value.withdrawalPolicy !== undefined && !isOneOf(value.withdrawalPolicy, ["advance-opponent", "preserve-fixtures"] as const)) ||
+    (value.thirdPlaceMatch !== undefined && typeof value.thirdPlaceMatch !== "boolean") ||
     (value.scoring !== undefined && !isValidRoundRobinScoring(value.scoring)) ||
     !isOneOf(value.seeding, ["entry-order", "random", "manual"] as const) ||
     !isOneOf(value.status, ["in_progress", "completed"] as const) ||

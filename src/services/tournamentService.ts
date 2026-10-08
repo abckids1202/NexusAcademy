@@ -55,6 +55,7 @@ export function createTournamentPreview(
   metadataByName: Record<string, TournamentRosterMetadata> = {},
   byePolicy?: TournamentByePolicy,
   withdrawalPolicy?: TournamentWithdrawalPolicy,
+  thirdPlaceMatch = false,
 ): Tournament {
   if (seeding === "manual") {
     const seats = names.map((name) => metadataByName[name.toLocaleLowerCase()]?.seat);
@@ -68,7 +69,7 @@ export function createTournamentPreview(
   const entrants = orderedNames.map((name) => ({ id: createId("participant"), name, ...(metadataByName[name.toLocaleLowerCase()] ?? {}) }));
   const tournament = format === "round-robin"
     ? createRoundRobinTournament(title, entrants, { seeding, roundRobinTiebreaker, scoring, byePolicy, withdrawalPolicy })
-    : createSingleEliminationTournament(title, entrants, { seeding, byePolicy, withdrawalPolicy });
+    : createSingleEliminationTournament(title, entrants, { seeding, byePolicy, withdrawalPolicy, thirdPlaceMatch });
   return tournament;
 }
 
@@ -91,8 +92,9 @@ export function createTournament(
   metadataByName: Record<string, TournamentRosterMetadata> = {},
   byePolicy?: TournamentByePolicy,
   withdrawalPolicy?: TournamentWithdrawalPolicy,
+  thirdPlaceMatch = false,
 ): Tournament {
-  return createTournamentFromPreview(createTournamentPreview(title, names, seeding, format, roundRobinTiebreaker, scoring, metadataByName, byePolicy, withdrawalPolicy));
+  return createTournamentFromPreview(createTournamentPreview(title, names, seeding, format, roundRobinTiebreaker, scoring, metadataByName, byePolicy, withdrawalPolicy, thirdPlaceMatch));
 }
 
 export function updateTournamentSetup(
@@ -106,13 +108,14 @@ export function updateTournamentSetup(
   expectedUpdatedAt?: string,
   byePolicy?: TournamentByePolicy,
   withdrawalPolicy?: TournamentWithdrawalPolicy,
+  thirdPlaceMatch?: boolean,
 ): Tournament {
   const tournament = getTournament(tournamentId);
   if (!tournament) throw new Error("Tournament not found.");
   if (expectedUpdatedAt !== undefined && tournament.updatedAt !== expectedUpdatedAt) {
     throw new StaleEditError("tournament");
   }
-  return saveTournament(rebuildTournamentSetup(tournament, title, names, seeding, format, undefined, roundRobinTiebreaker, scoring, byePolicy ?? tournament.byePolicy ?? "automatic", withdrawalPolicy ?? tournament.withdrawalPolicy ?? "advance-opponent"));
+  return saveTournament(rebuildTournamentSetup(tournament, title, names, seeding, format, undefined, roundRobinTiebreaker, scoring, byePolicy ?? tournament.byePolicy ?? "automatic", withdrawalPolicy ?? tournament.withdrawalPolicy ?? "advance-opponent", thirdPlaceMatch ?? tournament.thirdPlaceMatch ?? false));
 }
 
 export function recordTournamentMatchBye(tournamentId: string, matchId: string): Tournament {

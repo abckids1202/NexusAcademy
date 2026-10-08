@@ -38,7 +38,7 @@ function getTournamentSummary(tournament: Tournament): string {
           : match.scoreA !== undefined && match.scoreB !== undefined
             ? `${match.scoreA}-${match.scoreB}${winner ? ` | Winner: ${winner}` : " | Draw"}`
             : winner ? `Winner: ${winner}` : "Complete";
-        lines.push(`Match ${match.matchNumber}: ${first} vs ${second} | ${result}`);
+      lines.push(`${match.matchNumber === 2 && tournament.thirdPlaceMatch && round.roundNumber === tournament.rounds.at(-1)?.roundNumber ? "Third-place match" : `Match ${match.matchNumber}`}: ${first} vs ${second} | ${result}`);
         if (match.conditionDraw) lines.push(`  Condition: ${match.conditionDraw.optionLabel} (${match.conditionDraw.wheelTitle}, ${Math.round(match.conditionDraw.optionChance * 1000) / 10}%)`);
       }
     }
@@ -134,6 +134,7 @@ export function TournamentDetailPage() {
   const [setupFormat, setSetupFormat] = useState<Tournament["format"]>("single-elimination");
   const [setupTiebreaker, setSetupTiebreaker] = useState<Tournament["roundRobinTiebreaker"]>("seed");
   const [setupScoring, setSetupScoring] = useState<RoundRobinScoring>(() => ({ ...defaultRoundRobinScoring }));
+  const [setupThirdPlaceMatch, setSetupThirdPlaceMatch] = useState(false);
   const [setupBaseUpdatedAt, setSetupBaseUpdatedAt] = useState<string>();
   const [scoreDrafts, setScoreDrafts] = useState<Record<string, { a: string; b: string }>>({});
   const [setupError, setSetupError] = useState("");
@@ -336,6 +337,7 @@ export function TournamentDetailPage() {
     setSetupFormat(tournament.format);
     setSetupTiebreaker(tournament.roundRobinTiebreaker ?? "seed");
     setSetupScoring({ ...(tournament.scoring ?? defaultRoundRobinScoring) });
+    setSetupThirdPlaceMatch(tournament.thirdPlaceMatch);
     setSetupBaseUpdatedAt(tournament.updatedAt);
     setSetupError("");
     setIsEditingSetup(true);
@@ -345,7 +347,7 @@ export function TournamentDetailPage() {
     event.preventDefault();
     if (!tournament) return;
     try {
-      updateTournamentSetup(tournament.id, setupTitle, parsedSetupParticipants.names, setupSeeding, setupFormat, setupTiebreaker, setupScoring, setupBaseUpdatedAt);
+      updateTournamentSetup(tournament.id, setupTitle, parsedSetupParticipants.names, setupSeeding, setupFormat, setupTiebreaker, setupScoring, setupBaseUpdatedAt, undefined, undefined, setupThirdPlaceMatch);
       setIsEditingSetup(false);
       setSetupError("");
       setMessage("Tournament setup and pairings updated.");
@@ -455,6 +457,7 @@ export function TournamentDetailPage() {
           <label className="field-stack"><span>Loss points</span><input className="text-field" type="number" min="0" max="10000" step="1" value={setupScoring.lossPoints} onChange={(event) => setSetupScoring((current) => ({ ...current, lossPoints: Number(event.target.value) }))} /></label>
         </fieldset>}
         {setupFormat === "round-robin" && !isValidRoundRobinScoring(setupScoring) && <p className="validation-message" role="alert">Use whole points from 0 to 10,000, with wins above draws and draws at least equal to losses.</p>}
+        {setupFormat === "single-elimination" && <label className="field-stack"><span>Placement matches</span><select className="select-field" value={setupThirdPlaceMatch ? "third-place" : "championship-only"} onChange={(event) => setSetupThirdPlaceMatch(event.target.value === "third-place")}><option value="championship-only">Championship match only</option><option value="third-place">Add third-place match</option></select></label>}
         {parsedSetupParticipants.duplicateCount > 0 && <p className="muted" role="status">Repeated names will be ignored ({parsedSetupParticipants.duplicateCount}).</p>}
         {parsedSetupParticipants.names.length > setupParticipantLimit && <p className="validation-message" role="alert">This format supports up to {setupParticipantLimit} participants.</p>}
         {setupError && <p className="validation-message" role="alert">{setupError}</p>}
@@ -489,7 +492,7 @@ export function TournamentDetailPage() {
                 b: hasScore ? String(match.scoreB) : "",
               };
               return <article className={`tournament-match ${match.status === "complete" ? "is-complete" : ""}`} data-match-id={match.id} key={match.id}>
-                <div className="tournament-match-title"><strong>Match {match.matchNumber}</strong>{match.status === "bye" ? <span>Bye</span> : match.status === "complete" ? <span>Complete</span> : <span>Pending</span>}</div>
+                <div className="tournament-match-title"><strong>{match.matchNumber === 2 && tournament.thirdPlaceMatch && round.roundNumber === tournament.rounds.at(-1)?.roundNumber ? "Third-place match" : `Match ${match.matchNumber}`}</strong>{match.status === "bye" ? <span>Bye</span> : match.status === "complete" ? <span>Complete</span> : <span>Pending</span>}</div>
                 {match.status === "bye" && winner ? <div className="tournament-bye"><span className="seed-label">Seed {winner.seed}</span><strong>{winner.name}</strong>{(winner.group || winner.role || winner.seat) && <small className="muted">{[winner.group, winner.role, winner.seat ? `Seat ${winner.seat}` : ""].filter(Boolean).join(" · ")}</small>}<span className="muted">{tournament.format === "round-robin" ? "Bye · no match played" : "Bye · advances"}</span></div> : <>
                   {[participantA, participantB].map((participant, side) => participant ? <div className={`tournament-entrant ${winner?.id === participant.id ? "is-winner" : ""}`} key={participant.id}>
                     <span className="seed-label">{participant.seed}</span>

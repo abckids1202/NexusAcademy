@@ -25,6 +25,7 @@ type TournamentOptions = {
   seeding?: TournamentSeeding;
   byePolicy?: TournamentByePolicy;
   withdrawalPolicy?: TournamentWithdrawalPolicy;
+  thirdPlaceMatch?: boolean;
   roundRobinTiebreaker?: RoundRobinTiebreaker;
   scoring?: RoundRobinScoring;
   createdAt?: string;
@@ -115,6 +116,7 @@ function createTournamentBase(
     seeding: prepared.options.seeding ?? "entry-order",
     byePolicy: prepared.options.byePolicy ?? "automatic",
     withdrawalPolicy: prepared.options.withdrawalPolicy ?? "advance-opponent",
+    thirdPlaceMatch: prepared.options.thirdPlaceMatch ?? false,
     status: "in_progress",
     participants: prepared.participants,
     rounds,
@@ -327,6 +329,7 @@ export function createSingleEliminationTournament(
   options: TournamentOptions = {},
 ): Tournament {
   const prepared = prepareTournament(title, entrants, options);
+  if (options.thirdPlaceMatch && entrants.length < 4) throw new Error("A third-place match requires at least four participants.");
   const participants = prepared.participants;
   const bracketSize = 2 ** Math.ceil(Math.log2(participants.length));
   const totalRounds = Math.log2(bracketSize);
@@ -361,6 +364,11 @@ export function createSingleEliminationTournament(
       match.winnerId = winnerId;
       advanceByeWinner(rounds, 0, matchIndex, winnerId);
     }
+  }
+
+  if (options.thirdPlaceMatch) {
+    const finalRound = rounds.at(-1)!;
+    finalRound.matches.push({ id: prepared.makeId("match"), matchNumber: 2, status: "pending" });
   }
 
   return createTournamentBase(prepared, "single-elimination", rounds);
@@ -433,6 +441,7 @@ export function updateTournamentSetup(
   scoring: RoundRobinScoring = tournament.scoring ?? defaultRoundRobinScoring,
   byePolicy: TournamentByePolicy = tournament.byePolicy ?? "automatic",
   withdrawalPolicy: TournamentWithdrawalPolicy = tournament.withdrawalPolicy ?? "advance-opponent",
+  thirdPlaceMatch: boolean = tournament.thirdPlaceMatch ?? false,
 ): Tournament {
   if (!canEditTournamentSetup(tournament)) {
     throw new Error("Tournament setup is locked after event activity has been recorded.");
@@ -474,6 +483,7 @@ export function updateTournamentSetup(
     scoring,
     byePolicy,
     withdrawalPolicy,
+    thirdPlaceMatch,
     createdAt: tournament.createdAt,
   };
   const updated = format === "round-robin"
@@ -539,17 +549,26 @@ export function recordTournamentWinner(
     const destination = nextRound.matches[Math.floor(matchIndex / 2)];
     if (matchIndex % 2 === 0) destination.participantAId = winnerId;
     else destination.participantBId = winnerId;
+
+    if (tournament.thirdPlaceMatch && roundIndex === rounds.length - 2) {
+      const loserId = match.participantAId === winnerId ? match.participantBId : match.participantAId;
+      const thirdPlace = nextRound.matches[1];
+      if (loserId && thirdPlace) {
+        if (matchIndex % 2 === 0) thirdPlace.participantAId = loserId;
+        else thirdPlace.participantBId = loserId;
+      }
+    }
   }
 
-  const isFinal = roundIndex === rounds.length - 1;
+  const isComplete = rounds.every((round) => round.matches.every((roundMatch) => roundMatch.status !== "pending"));
   return {
     ...tournament,
     rounds,
     ...eventUpdate,
-    status: isFinal ? "completed" : "in_progress",
+    status: isComplete ? "completed" : "in_progress",
     nextResultSequence: tournament.nextResultSequence + 1,
     updatedAt: completedAt,
-    ...(isFinal ? { completedAt } : { completedAt: undefined }),
+    ...(isComplete ? { completedAt } : { completedAt: undefined }),
   };
 }
 
@@ -790,6 +809,14 @@ function removeAdvancedWinner(
   if (nextMatch.status === "complete" && nextMatch.winnerId) {
     invalidateCompletedMatch(rounds, roundIndex + 1, nextMatchIndex);
   }
+
+  const thirdPlace = nextRound.matches[1];
+  if (thirdPlace && roundIndex === rounds.length - 2) {
+    const sourceMatch = rounds[roundIndex].matches[matchIndex];
+    const loserId = sourceMatch?.participantAId === winnerId ? sourceMatch.participantBId : sourceMatch?.participantAId;
+    const loserKey = participantKey;
+    if (loserId && thirdPlace[loserKey] === loserId) delete thirdPlace[loserKey];
+  }
 }
 
 function invalidateCompletedMatch(rounds: TournamentRound[], roundIndex: number, matchIndex: number): void {
@@ -813,6 +840,9 @@ export function getDependentCompletedMatchCount(tournament: Tournament, matchId:
     currentRoundIndex += 1;
     const dependent = tournament.rounds[currentRoundIndex].matches[currentMatchIndex];
     if (dependent.status !== "complete") break;
+    count += 1;
+  }
+  if (tournament.thirdPlaceMatch && roundIndex === tournament.rounds.length - 2 && tournament.rounds.at(-1)?.matches[1]?.status === "complete") {
     count += 1;
   }
   return count;
@@ -859,6 +889,17 @@ export function correctTournamentWinner(
         winnerId: dependent.winnerId,
       });
     }
+    if (tournament.thirdPlaceMatch && roundIndex === tournament.rounds.length - 2) {
+      const thirdPlace = tournament.rounds.at(-1)?.matches[1];
+      if (thirdPlace?.status === "complete" && thirdPlace.winnerId) {
+        invalidatedMatches.push({
+          matchId: thirdPlace.id,
+          roundNumber: tournament.rounds.at(-1)!.roundNumber,
+          matchNumber: thirdPlace.matchNumber,
+          winnerId: thirdPlace.winnerId,
+        });
+      }
+    }
   }
 
   if (tournament.format !== "round-robin") {
@@ -871,6 +912,12 @@ export function correctTournamentWinner(
     if (destination) {
       const participantKey = matchIndex % 2 === 0 ? "participantAId" : "participantBId";
       destination[participantKey] = winnerId;
+    }
+    if (tournament.thirdPlaceMatch && roundIndex === rounds.length - 2) {
+      const thirdPlace = nextRound?.matches[1];
+      if (thirdPlace?.status === "complete") invalidateCompletedMatch(rounds, roundIndex + 1, 1);
+      const loserId = match.participantAId === winnerId ? match.participantBId : match.participantAId;
+      if (thirdPlace && loserId) thirdPlace[matchIndex % 2 === 0 ? "participantAId" : "participantBId"] = loserId;
     }
   }
 
@@ -915,8 +962,7 @@ export function correctTournamentWinner(
     };
   }
 
-  const finalMatch = rounds.at(-1)?.matches[0];
-  const isComplete = finalMatch?.status === "complete";
+  const isComplete = rounds.every((round) => round.matches.every((roundMatch) => roundMatch.status !== "pending"));
   return {
     ...tournament,
     rounds,
@@ -950,12 +996,8 @@ export function undoLastTournamentResult(
   const previousScoreB = match.scoreB;
   const previousResultMethod = match.resultMethod ?? "played";
   const previousForfeitingParticipantId = match.forfeitingParticipantId;
-  const nextRound = rounds[latest.roundIndex + 1];
-  if (tournament.format !== "round-robin" && nextRound && match.winnerId) {
-    const matchIndex = match.matchNumber - 1;
-    const destination = nextRound.matches[Math.floor(matchIndex / 2)];
-    if (matchIndex % 2 === 0 && destination.participantAId === match.winnerId) delete destination.participantAId;
-    if (matchIndex % 2 === 1 && destination.participantBId === match.winnerId) delete destination.participantBId;
+  if (tournament.format !== "round-robin" && match.winnerId) {
+    removeAdvancedWinner(rounds, latest.roundIndex, latest.matchIndex, match.winnerId);
   }
   match.status = "pending";
   delete match.winnerId;
@@ -1099,7 +1141,8 @@ export function getTournamentProgress(tournament: Tournament): { played: number;
   const champion = tournament.status === "completed"
     ? tournament.participants.find((participant) => participant.id === finalMatch?.winnerId)?.name
     : undefined;
-  return { played, total: Math.max(0, tournament.participants.length - 1), champion };
+  const total = tournament.rounds.flatMap((round) => round.matches).filter((match) => match.status !== "bye").length;
+  return { played, total, champion };
 }
 
 export function hasUndoableTournamentResult(tournament: Tournament): boolean {

@@ -221,10 +221,46 @@ describe("single-elimination bracket generation", () => {
 
   it("rejects invalid entrant counts and duplicate participant IDs", () => {
     expect(() => createSingleEliminationTournament("Small", entrants(1))).toThrow("at least two");
+    expect(() => createSingleEliminationTournament("Small placement", entrants(3), { thirdPlaceMatch: true })).toThrow("at least four");
     expect(() => createSingleEliminationTournament("Duplicate", [
       { id: "same", name: "A" },
       { id: "same", name: "B" },
     ])).toThrow("unique");
+  });
+
+  it("routes semifinal losers into a third-place match and completes both placement matches", () => {
+    let tournament = createSingleEliminationTournament("Placement Cup", entrants(4), { thirdPlaceMatch: true });
+    const opening = tournament.rounds[0].matches;
+    const firstLoser = opening[0].participantBId!;
+    const secondLoser = opening[1].participantBId!;
+    tournament = recordTournamentWinner(tournament, opening[0].id, opening[0].participantAId!);
+    tournament = recordTournamentWinner(tournament, opening[1].id, opening[1].participantAId!);
+
+    const finalRound = tournament.rounds.at(-1)!;
+    expect(finalRound.matches[0]).toMatchObject({ participantAId: opening[0].participantAId, participantBId: opening[1].participantAId });
+    expect(finalRound.matches[1]).toMatchObject({ participantAId: firstLoser, participantBId: secondLoser, status: "pending" });
+    expect(getTournamentProgress(tournament)).toMatchObject({ played: 2, total: 4 });
+
+    tournament = recordTournamentWinner(tournament, finalRound.matches[0].id, finalRound.matches[0].participantAId!);
+    tournament = recordTournamentWinner(tournament, finalRound.matches[1].id, finalRound.matches[1].participantAId!);
+    expect(tournament.status).toBe("completed");
+    expect(getTournamentProgress(tournament)).toMatchObject({ played: 4, total: 4, champion: "Player 1" });
+  });
+
+  it("retracts the loser route when undoing or correcting a semifinal result", () => {
+    let tournament = createSingleEliminationTournament("Correction Cup", entrants(4), { thirdPlaceMatch: true });
+    const opening = tournament.rounds[0].matches;
+    tournament = recordTournamentWinner(tournament, opening[0].id, opening[0].participantAId!);
+    tournament = recordTournamentWinner(tournament, opening[1].id, opening[1].participantAId!);
+    const semifinal = opening[0];
+    const finalRound = tournament.rounds.at(-1)!;
+    const corrected = correctTournamentWinner(tournament, semifinal.id, semifinal.participantBId!);
+    expect(corrected.rounds.at(-1)?.matches[0].participantAId).toBe(semifinal.participantBId);
+    expect(corrected.rounds.at(-1)?.matches[1].participantAId).toBe(semifinal.participantAId);
+    expect(getDependentCompletedMatchCount(corrected, semifinal.id)).toBe(0);
+    const undone = undoLastTournamentResult(tournament);
+    expect(undone.rounds.at(-1)?.matches[1].participantBId).toBeUndefined();
+    expect(finalRound.matches[1].participantAId).toBeDefined();
   });
 
   it("rebuilds the bracket from an editable roster and preserves IDs for unchanged names", () => {

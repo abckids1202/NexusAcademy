@@ -22,12 +22,15 @@ function describePreviewMatch(tournament: Tournament, roundIndex: number, matchI
     return `${participants.get(match.participantAId ?? "") ?? "TBD"} vs ${participants.get(match.participantBId ?? "") ?? "TBD"}`;
   }
   const sourceRound = tournament.rounds[roundIndex - 1];
+  const isThirdPlace = tournament.thirdPlaceMatch && roundIndex === tournament.rounds.length - 1 && match.matchNumber === 2;
   const getSide = (participantId: string | undefined, side: number) => {
     if (participantId) return participants.get(participantId) ?? "TBD";
     if (!sourceRound) return "TBD";
-    const sourceMatch = sourceRound.matches[matchIndex * 2 + side];
+    const sourceMatch = isThirdPlace
+      ? sourceRound.matches[side]
+      : sourceRound.matches[matchIndex * 2 + side];
     return sourceMatch
-      ? `Winner of ${getTournamentRoundLabel(sourceRound.roundNumber, tournament.rounds.length, tournament.format)} match ${sourceMatch.matchNumber}`
+      ? `${isThirdPlace ? "Loser" : "Winner"} of ${getTournamentRoundLabel(sourceRound.roundNumber, tournament.rounds.length, tournament.format)} match ${sourceMatch.matchNumber}`
       : "TBD";
   };
   return `${getSide(match.participantAId, 0)} vs ${getSide(match.participantBId, 1)}`;
@@ -43,6 +46,7 @@ export function TournamentsPage() {
   const [seeding, setSeeding] = useState<TournamentSeeding>("entry-order");
   const [byePolicy, setByePolicy] = useState<TournamentByePolicy>("automatic");
   const [withdrawalPolicy, setWithdrawalPolicy] = useState<TournamentWithdrawalPolicy>("advance-opponent");
+  const [thirdPlaceMatch, setThirdPlaceMatch] = useState(false);
   const [format, setFormat] = useState<TournamentFormat>("single-elimination");
   const [roundRobinTiebreaker, setRoundRobinTiebreaker] = useState<RoundRobinTiebreaker>("seed");
   const [scoring, setScoring] = useState<RoundRobinScoring>(() => ({ ...defaultRoundRobinScoring }));
@@ -156,7 +160,7 @@ export function TournamentsPage() {
     event.preventDefault();
     setError("");
     try {
-      setPreview(createTournamentPreview(title, parsedParticipants.names, seeding, format, roundRobinTiebreaker, scoring, metadataByName, byePolicy, withdrawalPolicy));
+      setPreview(createTournamentPreview(title, parsedParticipants.names, seeding, format, roundRobinTiebreaker, scoring, metadataByName, byePolicy, withdrawalPolicy, thirdPlaceMatch));
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Could not prepare the tournament preview.");
     }
@@ -268,6 +272,14 @@ export function TournamentsPage() {
             </select>
           </label>
           <p className="muted">Advancing opponents turns affected pending fixtures into byes. Preserving fixtures records the withdrawal without changing the reviewed schedule.</p>
+          {format === "single-elimination" && <label className="field-stack">
+            <span>Placement matches</span>
+            <select className="select-field" value={thirdPlaceMatch ? "third-place" : "championship-only"} onChange={(event) => { invalidatePreview(); setThirdPlaceMatch(event.target.value === "third-place"); }}>
+              <option value="championship-only">Championship match only</option>
+              <option value="third-place">Add third-place match</option>
+            </select>
+          </label>}
+          {thirdPlaceMatch && parsedParticipants.names.length < 4 && <p className="validation-message" role="alert">A third-place match requires at least four participants.</p>}
           {seeding === "manual" && !manualSeedValid && <p className="validation-message" role="alert">Assign a unique positive seat number to every participant before previewing manual seeds.</p>}
           {format === "round-robin" && <label className="field-stack">
             <span>Standings tiebreaker</span>
@@ -288,14 +300,14 @@ export function TournamentsPage() {
           {parsedParticipants.names.length > participantLimit && <p className="validation-message" role="alert">{format === "round-robin" ? "Round robin supports up to 32 participants." : `This format supports up to ${MAX_TOURNAMENT_PARTICIPANTS} participants.`}</p>}
           {parsedParticipants.duplicateCount > 0 && <p className="muted" role="status">Repeated names are ignored ({parsedParticipants.duplicateCount}).</p>}
           {error && <p className="validation-message" role="alert">{error}</p>}
-          <button className="primary-link" type="submit" disabled={!title.trim() || parsedParticipants.names.length < 2 || parsedParticipants.names.length > participantLimit || (format === "round-robin" && !scoringValid) || !manualSeedValid}>
+          <button className="primary-link" type="submit" disabled={!title.trim() || parsedParticipants.names.length < 2 || parsedParticipants.names.length > participantLimit || (format === "round-robin" && !scoringValid) || !manualSeedValid || (thirdPlaceMatch && parsedParticipants.names.length < 4)}>
             <Trophy size={16} /> Preview tournament
           </button>
         </form>
         {preview && <section className="tournament-preview" aria-label="Tournament preview">
           <header className="tournament-preview-header">
             <div><p className="eyebrow">Review before creating</p><h2>{preview.title}</h2><p>{preview.format === "round-robin" ? `Round robin · ${preview.roundRobinTiebreaker === "head-to-head" ? "Head-to-head tiebreak" : "Seed-order tiebreak"} · ${preview.scoring?.winPoints ?? 3}/${preview.scoring?.drawPoints ?? 1}/${preview.scoring?.lossPoints ?? 0} win/draw/loss points` : "Single elimination"} · {preview.participants.length} participants · {getTournamentProgress(preview).total} matches</p></div>
-            <span className="tournament-preview-seeding">{preview.seeding === "random" ? "Random seeding" : preview.seeding === "manual" ? "Manual seat order" : "Entry order"} · {preview.byePolicy === "manual" ? "Manual byes" : "Automatic byes"} · {preview.withdrawalPolicy === "preserve-fixtures" ? "Preserve withdrawals" : "Advance withdrawals"}</span>
+            <span className="tournament-preview-seeding">{preview.seeding === "random" ? "Random seeding" : preview.seeding === "manual" ? "Manual seat order" : "Entry order"} · {preview.byePolicy === "manual" ? "Manual byes" : "Automatic byes"} · {preview.withdrawalPolicy === "preserve-fixtures" ? "Preserve withdrawals" : "Advance withdrawals"}{preview.thirdPlaceMatch ? " · Third-place match" : ""}</span>
           </header>
           {preview.seeding === "random" && <p className="muted">This shuffled seed order is fixed for this preview and will be used when you create the tournament.</p>}
           <ol className="tournament-preview-seeds" aria-label="Preview seed order">{preview.participants.map((participant) => <li key={participant.id}><span>Seed {participant.seed}</span><strong>{participant.name}</strong>{(participant.group || participant.role || participant.seat) && <small className="muted">{[participant.group, participant.role, participant.seat ? `Seat ${participant.seat}` : ""].filter(Boolean).join(" · ")}</small>}</li>)}</ol>
@@ -307,7 +319,7 @@ export function TournamentsPage() {
           </div>
           <div className="hero-actions">
             <button className="primary-link" type="button" onClick={handleCreatePreview}><Trophy size={16} /> Create this tournament</button>
-            <button className="secondary-link" type="button" onClick={() => setPreview(createTournamentPreview(title, parsedParticipants.names, seeding, format, roundRobinTiebreaker, scoring, metadataByName, byePolicy, withdrawalPolicy))}>{seeding === "random" ? "Shuffle and preview again" : "Refresh preview"}</button>
+            <button className="secondary-link" type="button" onClick={() => setPreview(createTournamentPreview(title, parsedParticipants.names, seeding, format, roundRobinTiebreaker, scoring, metadataByName, byePolicy, withdrawalPolicy, thirdPlaceMatch))}>{seeding === "random" ? "Shuffle and preview again" : "Refresh preview"}</button>
           </div>
         </section>}
       </ShellCard>

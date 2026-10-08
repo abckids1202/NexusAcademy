@@ -114,6 +114,7 @@ export type Tournament = {
   seeding: TournamentSeeding;
   byePolicy: TournamentByePolicy;
   withdrawalPolicy: TournamentWithdrawalPolicy;
+  thirdPlaceMatch: boolean;
   status: TournamentStatus;
   participants: TournamentParticipant[];
   rounds: TournamentRound[];
