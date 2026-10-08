@@ -65,6 +65,25 @@ test("single-elimination preview can include and label a third-place match", asy
   await expect(page.locator(".tournament-match-title").filter({ hasText: "Third-place match" })).toBeVisible();
 });
 
+test("double-elimination preview creates winners, losers, and a locked reset final", async ({ page }) => {
+  await page.goto("/tournaments");
+  await page.getByLabel("Tournament name").fill("Double bracket cup");
+  await page.getByLabel(/Participants/).fill("Avery\nJordan\nSam\nTaylor");
+  await page.getByLabel("Format").selectOption("double-elimination");
+  await page.getByRole("button", { name: "Preview tournament" }).click();
+
+  const preview = page.getByRole("region", { name: "Tournament preview" });
+  await expect(preview).toContainText("Double elimination");
+  await expect(preview).toContainText("Winners Round 1");
+  await expect(preview).toContainText("Losers Round 1");
+  await expect(preview).toContainText("Grand Final");
+  await page.getByRole("button", { name: "Create this tournament" }).click();
+
+  await expect(page.getByText("Double elimination").first()).toBeVisible();
+  await expect(page.locator(".tournament-round").filter({ hasText: "Grand Final" })).toContainText("Locked");
+  await expect(page.getByText("The reset final activates only if the losers-bracket champion wins the first grand final.")).toBeVisible();
+});
+
 test("best-of series records games before advancing the bracket", async ({ page }) => {
   await page.goto("/tournaments");
   await page.getByLabel("Tournament name").fill("Series cup");

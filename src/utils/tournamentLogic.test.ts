@@ -65,6 +65,32 @@ describe("double-elimination brackets", () => {
     expect(firstLosersMatch.participantAId).toBe(first.participantBId);
     expect(firstLosersMatch.participantBId).toBe(second.participantBId);
   });
+
+  it("completes through the losers bracket and activates a grand-final reset", () => {
+    const tournament = createDoubleEliminationTournament("Reset Cup", entrants(4), {
+      id: "double-reset",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      idFactory: (() => { let id = 0; return (prefix: string) => `${prefix}-${++id}`; })(),
+    });
+    const winnersRound = tournament.rounds[0].matches;
+    let current = recordTournamentWinner(tournament, winnersRound[0].id, winnersRound[0].participantAId!, "2026-01-01T01:00:00.000Z");
+    current = recordTournamentWinner(current, winnersRound[1].id, winnersRound[1].participantAId!, "2026-01-01T02:00:00.000Z");
+    current = recordTournamentWinner(current, current.rounds[1].matches[0].id, current.rounds[1].matches[0].participantAId!, "2026-01-01T03:00:00.000Z");
+    const losersRoundOne = current.rounds.find((round) => round.label === "Losers Round 1")!.matches[0];
+    current = recordTournamentWinner(current, losersRoundOne.id, losersRoundOne.participantAId!, "2026-01-01T04:00:00.000Z");
+    const losersFinal = current.rounds.find((round) => round.label === "Losers Round 2")!.matches[0];
+    current = recordTournamentWinner(current, losersFinal.id, losersFinal.participantAId!, "2026-01-01T05:00:00.000Z");
+    const grandFinal = current.rounds.at(-1)!.matches[0];
+    current = recordTournamentWinner(current, grandFinal.id, grandFinal.participantBId!, "2026-01-01T06:00:00.000Z");
+
+    const reset = current.rounds.at(-1)!.matches[1];
+    expect(current.status).toBe("in_progress");
+    expect(reset).toMatchObject({ status: "pending", participantAId: grandFinal.participantAId, participantBId: grandFinal.participantBId });
+
+    current = recordTournamentWinner(current, reset.id, reset.participantBId!, "2026-01-01T07:00:00.000Z");
+    expect(current.status).toBe("completed");
+    expect(getTournamentProgress(current).champion).toBe("Player 4");
+  });
 });
 
 describe("tournament participant attendance", () => {
