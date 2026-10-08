@@ -1250,7 +1250,13 @@ export function undoLastTournamentResult(
     return { ...tournament, rounds, ...eventUpdate, status: "in_progress", nextResultSequence: latest.sequence, updatedAt, completedAt: undefined };
   }
   if (tournament.format === "double-elimination" && match.winnerId) {
-    clearDoubleBracketRoutes(rounds, match, match.winnerId, match.participantAId === match.winnerId ? match.participantBId : match.participantAId);
+    if (match.bracket !== "grand-final") {
+      clearDoubleBracketRoutes(rounds, match, match.winnerId, match.participantAId === match.winnerId ? match.participantBId : match.participantAId);
+    }
+    if (match.bracket === "grand-final") {
+      const reset = tournament.grandFinalResetMatchId ? rounds.flatMap((round) => round.matches).find((item) => item.id === tournament.grandFinalResetMatchId) : undefined;
+      if (reset) { reset.status = "locked"; delete reset.participantAId; delete reset.participantBId; delete reset.winnerId; delete reset.completedAt; delete reset.resultSequence; }
+    }
     if (match.isGrandFinalReset) {
       const grandFinal = tournament.grandFinalMatchId ? rounds.flatMap((round) => round.matches).find((item) => item.id === tournament.grandFinalMatchId) : undefined;
       if (grandFinal?.status === "complete" && grandFinal.winnerId === grandFinal.participantBId) {

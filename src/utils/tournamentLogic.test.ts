@@ -87,6 +87,13 @@ describe("double-elimination brackets", () => {
     expect(current.status).toBe("in_progress");
     expect(reset).toMatchObject({ status: "pending", participantAId: grandFinal.participantAId, participantBId: grandFinal.participantBId });
 
+    current = undoLastTournamentResult(current, "2026-01-01T06:30:00.000Z");
+    expect(current.rounds.at(-1)!.matches[0].status).toBe("pending");
+    expect(current.rounds.at(-1)!.matches[1]).toMatchObject({ status: "locked", isGrandFinalReset: true });
+
+    const replayedGrandFinal = current.rounds.at(-1)!.matches[0];
+    current = recordTournamentWinner(current, replayedGrandFinal.id, replayedGrandFinal.participantBId!, "2026-01-01T06:45:00.000Z");
+
     current = recordTournamentWinner(current, reset.id, reset.participantBId!, "2026-01-01T07:00:00.000Z");
     expect(current.status).toBe("completed");
     expect(getTournamentProgress(current).champion).toBe("Player 4");
