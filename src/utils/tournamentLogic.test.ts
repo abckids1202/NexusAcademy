@@ -244,6 +244,13 @@ describe("single-elimination bracket generation", () => {
     expect(updated.events).toEqual([]);
   });
 
+  it("preserves roster metadata when pairings are regenerated", () => {
+    const initial = bracket(2);
+    initial.participants[0] = { ...initial.participants[0], group: "Blue", role: "Captain", seat: 4 };
+    const updated = updateTournamentSetup(initial, "Metadata Cup", [initial.participants[0].name, initial.participants[1].name], "entry-order");
+    expect(updated.participants[0]).toMatchObject({ group: "Blue", role: "Captain", seat: 4 });
+  });
+
   it("rejects roster edits after a result or any result history exists", () => {
     const initial = bracket(4);
     const first = initial.rounds[0].matches[0];

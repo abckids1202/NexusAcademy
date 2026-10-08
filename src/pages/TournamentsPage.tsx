@@ -1,12 +1,12 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, Trash2, Trophy, Upload } from "lucide-react";
+import { ArrowRight, Shuffle, Trash2, Trophy, Upload } from "lucide-react";
 import { PageHeader } from "../components/common/PageHeader";
 import { ShellCard } from "../components/common/ShellCard";
 import { createTournamentFromPreview, createTournamentPreview, deleteTournament, type TournamentRosterMetadata } from "../services/tournamentService";
 import { useTournaments } from "../hooks/useTournaments";
 import type { RoundRobinScoring, RoundRobinTiebreaker, Tournament, TournamentFormat, TournamentMatch, TournamentSeeding } from "../types";
-import { MAX_ROUND_ROBIN_PARTICIPANTS, MAX_TOURNAMENT_PARTICIPANTS, getTournamentProgress, getTournamentRoundLabel, isValidRoundRobinScoring } from "../utils/tournamentLogic";
+import { MAX_ROUND_ROBIN_PARTICIPANTS, MAX_TOURNAMENT_PARTICIPANTS, getTournamentProgress, getTournamentRoundLabel, isValidRoundRobinScoring, shuffleParticipants } from "../utils/tournamentLogic";
 import { parseParticipantNames } from "../utils/participantImport";
 import { inspectParticipantCsv, parseParticipantCsvColumn, type CsvParticipantPreview, type ParticipantCsvInspection } from "../utils/csvImport";
 import { defaultRoundRobinScoring } from "../data/tournamentDefaults";
@@ -38,6 +38,7 @@ export function TournamentsPage() {
   const [title, setTitle] = useState("");
   const [participantText, setParticipantText] = useState("");
   const [selectedParticipantIds, setSelectedParticipantIds] = useState<string[]>([]);
+  const [rosterMetadata, setRosterMetadata] = useState<Record<string, TournamentRosterMetadata>>({});
   const [seeding, setSeeding] = useState<TournamentSeeding>("entry-order");
   const [format, setFormat] = useState<TournamentFormat>("single-elimination");
   const [roundRobinTiebreaker, setRoundRobinTiebreaker] = useState<RoundRobinTiebreaker>("seed");
@@ -62,6 +63,19 @@ export function TournamentsPage() {
   const directoryMetadataByName = useMemo<Record<string, TournamentRosterMetadata>>(() => Object.fromEntries(
     directoryParticipants.map((participant) => [participant.name.toLocaleLowerCase(), participant.group ? { group: participant.group } : {}]),
   ), [directoryParticipants]);
+  const metadataByName = useMemo<Record<string, TournamentRosterMetadata>>(() => Object.fromEntries(
+    parsedParticipants.names.map((name) => {
+      const key = name.toLocaleLowerCase();
+      const directory = directoryMetadataByName[key] ?? {};
+      const custom = rosterMetadata[key] ?? {};
+      return [key, {
+        ...(directory.group ? { group: directory.group } : {}),
+        ...(custom.group?.trim() ? { group: custom.group.trim() } : {}),
+        ...(custom.role?.trim() ? { role: custom.role.trim() } : {}),
+        ...(custom.seat && custom.seat > 0 ? { seat: Math.floor(custom.seat) } : {}),
+      }];
+    }),
+  ), [directoryMetadataByName, parsedParticipants.names, rosterMetadata]);
 
   async function previewParticipantsCsv(file?: File) {
     if (!file) return;
@@ -104,11 +118,27 @@ export function TournamentsPage() {
     invalidatePreview();
   }
 
+  function updateRosterMetadata(name: string, field: keyof TournamentRosterMetadata, value: string) {
+    const key = name.toLocaleLowerCase();
+    setRosterMetadata((current) => ({ ...current, [key]: { ...current[key], [field]: field === "seat" ? (value ? Number(value) : undefined) : value } }));
+    invalidatePreview();
+  }
+
+  function assignRandomSeats() {
+    const seats = shuffleParticipants(parsedParticipants.names).reduce<Record<string, TournamentRosterMetadata>>((result, name, index) => {
+      const key = name.toLocaleLowerCase();
+      result[key] = { ...rosterMetadata[key], seat: index + 1 };
+      return result;
+    }, {});
+    setRosterMetadata((current) => ({ ...current, ...seats }));
+    invalidatePreview();
+  }
+
   function handlePreview(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
     try {
-      setPreview(createTournamentPreview(title, parsedParticipants.names, seeding, format, roundRobinTiebreaker, scoring, directoryMetadataByName));
+      setPreview(createTournamentPreview(title, parsedParticipants.names, seeding, format, roundRobinTiebreaker, scoring, metadataByName));
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Could not prepare the tournament preview.");
     }
@@ -152,6 +182,22 @@ export function TournamentsPage() {
             <legend>Reuse participant directory</legend>
             <label className="field-stack"><span>Select saved participants</span><select className="select-field" multiple size={Math.min(5, directoryParticipants.length)} aria-label="Saved participants" value={selectedParticipantIds} onChange={(event) => setSelectedParticipantIds(Array.from(event.target.selectedOptions, (option) => option.value))}>{directoryParticipants.map((participant) => <option key={participant.id} value={participant.id}>{participant.name}{participant.group ? ` · ${participant.group}` : ""}</option>)}</select></label>
             <button className="secondary-link" type="button" disabled={selectedParticipantIds.length === 0} onClick={addDirectoryParticipants}>Add selected participants</button>
+          </fieldset>}
+          {parsedParticipants.names.length > 0 && <fieldset className="roster-details">
+            <legend>Roster details</legend>
+            <p className="muted">Add team labels, roles, or seats before reviewing the bracket. These details stay with the tournament record.</p>
+            <div className="roster-detail-list">{parsedParticipants.names.map((name) => {
+              const key = name.toLocaleLowerCase();
+              const directoryGroup = directoryMetadataByName[key]?.group ?? "";
+              const details = rosterMetadata[key] ?? {};
+              return <div className="roster-detail-row" key={key}>
+                <strong>{name}</strong>
+                <label><span className="sr-only">Group or team for {name}</span><input className="text-field" value={details.group ?? directoryGroup} onChange={(event) => updateRosterMetadata(name, "group", event.target.value)} placeholder="Team / group" /></label>
+                <label><span className="sr-only">Role for {name}</span><input className="text-field" value={details.role ?? ""} onChange={(event) => updateRosterMetadata(name, "role", event.target.value)} placeholder="Role" /></label>
+                <label><span className="sr-only">Seat for {name}</span><input className="text-field" type="number" min="1" step="1" value={details.seat ?? ""} onChange={(event) => updateRosterMetadata(name, "seat", event.target.value)} placeholder="Seat" /></label>
+              </div>;
+            })}</div>
+            <button className="secondary-link" type="button" onClick={assignRandomSeats}><Shuffle size={16} /> Assign random seats</button>
           </fieldset>}
           <label className="secondary-link file-button"><Upload size={16} /> Preview participant CSV<input type="file" accept=".csv,text/csv" onChange={(event) => { void previewParticipantsCsv(event.target.files?.[0]); event.currentTarget.value = ""; }} /></label>
           {participantCsvPreview && <section className="csv-option-preview" aria-label="Participant CSV preview">
@@ -212,7 +258,7 @@ export function TournamentsPage() {
             <span className="tournament-preview-seeding">{preview.seeding === "random" ? "Random seeding" : "Entry order"}</span>
           </header>
           {preview.seeding === "random" && <p className="muted">This shuffled seed order is fixed for this preview and will be used when you create the tournament.</p>}
-          <ol className="tournament-preview-seeds" aria-label="Preview seed order">{preview.participants.map((participant) => <li key={participant.id}><span>Seed {participant.seed}</span><strong>{participant.name}</strong>{participant.group && <small className="muted">{participant.group}</small>}</li>)}</ol>
+          <ol className="tournament-preview-seeds" aria-label="Preview seed order">{preview.participants.map((participant) => <li key={participant.id}><span>Seed {participant.seed}</span><strong>{participant.name}</strong>{(participant.group || participant.role || participant.seat) && <small className="muted">{[participant.group, participant.role, participant.seat ? `Seat ${participant.seat}` : ""].filter(Boolean).join(" · ")}</small>}</li>)}</ol>
           <div className="tournament-preview-rounds" aria-label="Preview pairings" tabIndex={0}>
             {preview.rounds.map((round, roundIndex) => <section className="tournament-preview-round" key={round.roundNumber} aria-label={getTournamentRoundLabel(round.roundNumber, preview.rounds.length, preview.format)}>
               <h3>{getTournamentRoundLabel(round.roundNumber, preview.rounds.length, preview.format)}</h3>
@@ -221,7 +267,7 @@ export function TournamentsPage() {
           </div>
           <div className="hero-actions">
             <button className="primary-link" type="button" onClick={handleCreatePreview}><Trophy size={16} /> Create this tournament</button>
-            <button className="secondary-link" type="button" onClick={() => setPreview(createTournamentPreview(title, parsedParticipants.names, seeding, format, roundRobinTiebreaker, scoring, directoryMetadataByName))}>{seeding === "random" ? "Shuffle and preview again" : "Refresh preview"}</button>
+            <button className="secondary-link" type="button" onClick={() => setPreview(createTournamentPreview(title, parsedParticipants.names, seeding, format, roundRobinTiebreaker, scoring, metadataByName))}>{seeding === "random" ? "Shuffle and preview again" : "Refresh preview"}</button>
           </div>
         </section>}
       </ShellCard>

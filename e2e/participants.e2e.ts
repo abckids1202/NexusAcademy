@@ -45,8 +45,11 @@ test("tournament creation can add active directory participants", async ({ page 
   await savedParticipants.selectOption((await samOption.getAttribute("value")) ?? "");
   await page.getByRole("button", { name: "Add selected participants" }).click();
   await expect(page.getByLabel(/Participants/)).toHaveValue("Jordan Lee\nSam Ortiz");
+  await page.getByLabel("Role for Jordan Lee").fill("Captain");
+  await page.getByLabel("Seat for Jordan Lee").fill("7");
   await page.getByLabel("Tournament name").fill("Directory metadata cup");
   await page.getByRole("button", { name: "Preview tournament" }).click();
   await expect(page.getByRole("region", { name: "Tournament preview" })).toContainText("Blue team");
   await expect(page.getByRole("region", { name: "Tournament preview" })).toContainText("Gold team");
+  await expect(page.getByRole("region", { name: "Tournament preview" })).toContainText("Captain · Seat 7");
 });

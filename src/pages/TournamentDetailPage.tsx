@@ -459,10 +459,11 @@ export function TournamentDetailPage() {
               };
               return <article className={`tournament-match ${match.status === "complete" ? "is-complete" : ""}`} data-match-id={match.id} key={match.id}>
                 <div className="tournament-match-title"><strong>Match {match.matchNumber}</strong>{match.status === "bye" ? <span>Bye</span> : match.status === "complete" ? <span>Complete</span> : <span>Pending</span>}</div>
-                {match.status === "bye" && winner ? <div className="tournament-bye"><span className="seed-label">Seed {winner.seed}</span><strong>{winner.name}</strong><span className="muted">{tournament.format === "round-robin" ? "Bye · no match played" : "Bye · advances"}</span></div> : <>
+                {match.status === "bye" && winner ? <div className="tournament-bye"><span className="seed-label">Seed {winner.seed}</span><strong>{winner.name}</strong>{(winner.group || winner.role || winner.seat) && <small className="muted">{[winner.group, winner.role, winner.seat ? `Seat ${winner.seat}` : ""].filter(Boolean).join(" · ")}</small>}<span className="muted">{tournament.format === "round-robin" ? "Bye · no match played" : "Bye · advances"}</span></div> : <>
                   {[participantA, participantB].map((participant, side) => participant ? <div className={`tournament-entrant ${winner?.id === participant.id ? "is-winner" : ""}`} key={participant.id}>
                     <span className="seed-label">{participant.seed}</span>
                     <strong>{participant.name}</strong>
+                    {(participant.group || participant.role || participant.seat) && <small className="muted">{[participant.group, participant.role, participant.seat ? `Seat ${participant.seat}` : ""].filter(Boolean).join(" · ")}</small>}
                     {winner?.id === participant.id && correctingMatchId !== match.id && <span className="winner-tag">Winner</span>}
                     {match.status === "pending" && <button className="record-winner-button" type="button" aria-label={`Record ${participant.name} as winner of round ${round.roundNumber} match ${match.matchNumber}`} onClick={() => chooseWinner(match.id, participant.id)}>Winner</button>}
                     {match.status === "complete" && correctingMatchId === match.id && !hasScore && <button className="record-winner-button" type="button" aria-label={`Correct result: make ${participant.name} the winner of match ${match.matchNumber}`} onClick={() => correctWinner(match.id, participant.id)}>Set winner</button>}

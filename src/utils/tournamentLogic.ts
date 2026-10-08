@@ -436,11 +436,17 @@ export function updateTournamentSetup(
     seenNames.add(key);
   }
 
-  const participantIdsByName = new Map(tournament.participants.map((participant) => [participant.name.toLocaleLowerCase(), participant.id]));
-  const entrants = normalizedNames.map((name) => ({
-    id: participantIdsByName.get(name.toLocaleLowerCase()) ?? createId("participant"),
-    name,
-  }));
+  const participantByName = new Map(tournament.participants.map((participant) => [participant.name.toLocaleLowerCase(), participant]));
+  const entrants = normalizedNames.map((name) => {
+    const existing = participantByName.get(name.toLocaleLowerCase());
+    return {
+      id: existing?.id ?? createId("participant"),
+      name,
+      ...(existing?.group ? { group: existing.group } : {}),
+      ...(existing?.role ? { role: existing.role } : {}),
+      ...(existing?.seat ? { seat: existing.seat } : {}),
+    };
+  });
   const createOptions = {
     ...options,
     id: tournament.id,
