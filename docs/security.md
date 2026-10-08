@@ -1,10 +1,12 @@
-# Security Notes
+# WheelForge Security Notes
 
-- Store passwords with a production password hasher before deployment.
-- Rotate refresh tokens and persist token revocation in PostgreSQL.
-- Keep AI prompts, retrieved passages, learner writing, and uploaded content as untrusted data.
-- Enforce object-level authorization in every repository method.
-- Do not expose model keys or internal prompts to the frontend.
-- Minimize collection of data from minors and support deletion/export flows.
-- Disable public rankings for children by default.
+- Supabase Auth owns password hashing and session management; never add or expose a custom password store in the browser.
+- Only the publishable Supabase key may be exposed through `VITE_*` variables. Never ship a service-role key to the client.
+- Keep the workspace table protected by per-user RLS policies for select, insert, update, and delete.
+- Validate imported backups and cloud payloads before exposing them to application state.
+- Treat local activity history as editable application data, not tamper-proof evidence or certified randomness.
+- Use optimistic revision checks for local drafts and cloud backups; surface conflicts instead of silently overwriting newer data.
+- Configure exact password-reset redirect URLs, HTTPS, CSP, frame, referrer, and content-type headers before deployment.
+- Test account deletion, recovery, two-account isolation, backup restore, and rollback against staging before public release.
+- Keep exported backups private and avoid placing participant data, tokens, or backup payloads in logs or issue trackers.
 

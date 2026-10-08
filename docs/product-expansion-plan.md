@@ -1,7 +1,7 @@
 # WheelForge Re-audit and Product Expansion Plan
 
-**Reviewed:** September 23, 2026  
-**Project:** WheelForge (`C:\Users\charl\OneDrive\Desktop\wheelapp`)
+**Reviewed:** October 8, 2026
+**Project:** WheelForge (`C:\Users\charl\OneDrive\Desktop\WheelForge`)
 
 ## Executive Read
 
@@ -20,20 +20,20 @@ The biggest gaps are now not basic wheel mechanics. They are simplifying the cap
 - **Generators:** ordered wheel chains, conditional steps, fallbacks/skips, auto-spin, persisted resumable sessions.
 - **Templates:** built-in wheel and generator templates; search, category/type filters, favorites, recents, independent editable copies; save/update user templates, including cloning dependent wheels and remapping chain references. Custom packs can be created, exported/imported, versioned, diffed, and restored.
 - **Local workspace:** versioned `wheelforge_data_v1`; persisted workspaces are schema-validated before use, supported v1 legacy fields migrate, and malformed or unsupported raw values are preserved for diagnosis. Settings can download the preserved value, replace it with a validated backup, or reset after confirmation; ordinary writes cannot overwrite it. JSON backup replace/merge review, storage fallback, reset/demo restore, and stale-draft detection/recovery are covered.
-- **Tournament core:** single elimination and round robin; reviewed exact schedule/seed preview; random or entry-order seeding; automatic bracket byes; roster paste/CSV import; configurable round-robin scoring and tiebreak; winner/score recording, draws, corrections, undo, progression, standings, event history, condition-wheel draws, and text export. Single elimination also supports an optional third-place match. A separate chance-based winner draw supports ticket-weighted odds, a reviewed eligible pool, multiple unique winners without replacement, result snapshots, and append-only undo. Tournament detail now offers a privacy-reviewed CSV export with optional participant-name anonymization and activity history, plus a print stylesheet for schedules and standings.
+- **Tournament core:** single elimination and round robin; reviewed exact schedule/seed preview; random or entry-order seeding; automatic/manual bracket byes; roster paste/CSV import; configurable round-robin scoring and tiebreak; winner/score recording, best-of-1/3/5 series, draws, corrections, undo, progression, standings, event history, condition-wheel draws, and text export. Single elimination also supports an optional third-place match. A separate chance-based winner draw supports ticket-weighted odds, a reviewed eligible pool, multiple unique winners without replacement, result snapshots, and append-only undo. Tournament detail now offers a privacy-reviewed CSV export with optional participant-name anonymization and activity history, plus a print stylesheet for schedules and standings.
 - **Cloud foundation:** Supabase Auth, manual private backup upload/restore/delete, password recovery/reset UX, account deletion endpoint/UI, SQL migration and RLS test source exist. This is implemented code, not proof of a configured production service.
-- **Verification:** `npm run check` passed October 8, 2026 with ESLint, 125 unit tests, production build, 46 Chromium journeys (including malformed local-data recovery, explicit match forfeits, correction/undo, third-place matches, custom pack lifecycle, and automated axe coverage), and 2 mocked cloud recovery journeys. `npm audit --audit-level=high` reported zero high or critical vulnerabilities. Automated axe checks are not manual accessibility certification.
+- **Verification:** the current checkout passes lint, 133 unit tests, production build, 51 Chromium journeys, 2 mocked cloud recovery journeys, and high/critical dependency audit. Automated axe checks are not manual accessibility certification.
 
 ### Partial, absent, or unverified
 
-- **Tournament formats:** no double elimination, Swiss, group stage/playoffs, free-for-all, league season, or best-of series. Single elimination supports optional third-place matches, and round robin remains available.
-- **Tournament operations:** a full-screen host queue records elimination winners and round-robin scores, selects match conditions, supports undo and correction (including dependent-match warnings), and exposes a separate read-only audience screen. Host attendance tracking logs Expected/Checked in/Not present changes without changing fixtures. Hosts can explicitly forfeit one ready fixture; it awards the opponent the win, gives configured W/L points without inventing a score in round robin, and leaves other fixtures untouched. Participant-wide withdrawal, configurable bye policy, and manual seed editing remain absent. CSV and print output exist, but need manual print-preview checks across browsers and participant-facing export feedback.
+- **Tournament formats:** single elimination supports optional third-place matches and best-of-1/3/5 series; round robin remains available. Double elimination, Swiss, group stage/playoffs, free-for-all, and league seasons remain future work.
+- **Tournament operations:** a full-screen host queue records elimination winners, best-of series games, and round-robin scores, selects match conditions, supports undo and correction (including dependent-match warnings), and exposes a separate read-only audience screen. Attendance, participant withdrawal, configurable bye policies, manual seed editing, CSV export, and print output are implemented. Manual print-preview checks and participant-facing export feedback remain.
 - **Tournament wheels:** condition draws are implemented and recorded separately; randomize seeds is part of setup; chance-based ticket-weighted winner draws are now separate from match results and do not affect standings. These are local event records, not independent fairness certification.
 - **Templates:** built-in multi-wheel/generator kits and tournament presets exist. Custom packs support JSON export/import, independent component snapshots, version diffs, and restoration; there is no shared community gallery or template update channel.
 - **Participant toolkit:** reusable participant profiles, roster reuse, CSV name-column mapping, team labels, roles, seating, balanced team assignment, attendance, and reviewed withdrawal policies are implemented. Public sharing and richer participant-facing exports remain absent.
 - **Import/export:** individual pack JSON export/import and roster column mapping are implemented. Public draw verification/export remains absent; tournament CSV still offers name anonymization and optional activity inclusion.
 - **Storage concurrency:** stale editors notice newer versions and protect drafts, but the workspace is one localStorage object. That is not a transaction or conflict-free merge; simultaneous mutations can race.
-- **Cloud readiness:** `.env.local` is absent and `.env.example` has blank credentials. SQL migration/tests and an Edge Function are present, but live RLS isolation, deletion, real email recovery, backup restore, and two-account checks have not been verified in a real Supabase project. No production deployment, monitoring, or recovery evidence was found in this checkout.
+- **Cloud readiness:** `.env.local` is absent and `.env.example` has blank credentials. SQL migration/tests, conflict-aware backup writes, and an Edge Function are present, but live RLS isolation, deletion, real email recovery, backup restore, and two-account checks have not been verified in a real Supabase project. No production deployment, monitoring, or recovery evidence was found in this checkout.
 - **Draw assurance:** local Web Crypto is suitable for casual picks, not independent proof that a public prize draw was untampered. No signed provider record, immutable hosted audit log, or public draw verification exists.
 - **Accessibility/browser coverage:** automated Chromium/axe checks pass; manual keyboard/screen-reader testing and additional browser/device coverage remain.
 
@@ -94,7 +94,7 @@ Add one rules engine at a time, with written rules and reference fixtures.
 2. **Group stage into playoffs:** define group assignment/seeding, round-robin scoring, number advanced, tie policy, and transition snapshot; reuse the tested round-robin engine.
 3. **Swiss:** select and name a pairing method; specify rounds, score-group pairing, repeat-opponent avoidance, bye rotation, withdrawals, tie-break order, and round locking/reopening before coding. Provide reproducible pairings and explain each. Do not claim FIDE compliance unless checked against current FIDE rules.
 4. **Free-for-all/leaderboard:** after participant ordering and multi-winner semantics stabilize; define players per heat, advancement, placement scoring, and ties.
-5. **League season/best-of:** use series-level records, not ad-hoc bracket matches; define schedule, home/away, aggregate, draws, and ties.
+5. **League seasons:** use the existing series-level records as a foundation; define schedule, home/away, aggregate, draws, and ties.
 
 **Acceptance:** pure logic tests include invariants, seeded fixtures, correction/undo round trips, and import/export compatibility. The UI explains supported rules before creation.
 
@@ -139,7 +139,7 @@ Add one rules engine at a time, with written rules and reference fixtures.
 
 Continue tournament operations and template reuse in small releases, not another format immediately:
 
-1. Check-in and per-match forfeit behavior are implemented and explicitly logged. Define pre-start scratch, participant-wide withdrawal and how it affects remaining fixtures, plus configurable bye policy; retain the mobile queue/audience split and make every roster-state change explicit in tournament history.
+1. Check-in, per-match forfeit behavior, participant-wide withdrawal policy, and configurable bye behavior are implemented and explicitly logged. Define pre-start scratch and how future formats affect remaining fixtures; retain the mobile queue/audience split and make every roster-state change explicit in tournament history.
 2. Define the pack schema and build multi-wheel/generator kits, including a tournament kit; then implement double elimination. Swiss comes only after its pairing rules are specified and tested as a standalone engine.
 3. Manually test print output, keyboard workflows, and screen-reader announcements; complete browser/device coverage before a public event rollout.
 
@@ -154,6 +154,6 @@ Research checked September 22, 2026 against Wheel of Names' FAQ, Challonge's com
 
 ## Verification Record
 
-- `npm run check`: passed September 23, 2026 in the staged writable copy; ESLint, 106 unit tests, production build, 39 Chromium journeys including parseable-invalid local data preservation/recovery, check-in isolation, explicit forfeit and undo/correction, dependent-result reopening, audience view, phone-width and axe coverage, and 2 mocked-cloud journeys.
+- Current release-gate evidence: lint, 133 unit tests, production build, 51 Chromium journeys, 2 mocked-cloud journeys, cross-browser smoke configuration, and zero high/critical dependency advisories. Automated checks do not replace live Supabase, deployment, monitoring, recovery-drill, or manual accessibility verification.
 - `npm audit --audit-level=low`: zero vulnerabilities.
 - Not verified: live Supabase, real email delivery, deployed account-deletion function, two-account RLS isolation, production deployment/monitoring, manual screen-reader testing, or browser coverage beyond configured Chromium.
