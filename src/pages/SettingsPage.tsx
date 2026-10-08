@@ -248,7 +248,7 @@ export function SettingsPage() {
       const previous = await readCloudBackup();
       const detail = previous ? ` This replaces the backup last updated ${new Date(previous.updatedAt).toLocaleString()}.` : "";
       if (!window.confirm(`Upload this browser's entire WheelForge workspace to your private cloud backup?${detail}`)) return;
-      const updatedAt = await writeCloudBackup(loadData());
+      const updatedAt = await writeCloudBackup(loadData(), previous?.updatedAt);
       setCloudMessage(`Cloud backup updated ${new Date(updatedAt).toLocaleString()}.`);
     } catch (error) {
       setCloudError(error instanceof Error ? error.message : "Could not upload the cloud backup.");

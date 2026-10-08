@@ -7,6 +7,13 @@ export type CloudBackup = {
   updatedAt: string;
 };
 
+export class CloudBackupConflictError extends Error {
+  constructor() {
+    super("This cloud backup changed in another browser. Read the latest backup before uploading again.");
+    this.name = "CloudBackupConflictError";
+  }
+}
+
 let client: SupabaseClient | undefined;
 
 function getConfig() {
@@ -111,17 +118,39 @@ export async function readCloudBackup(): Promise<CloudBackup | null> {
   };
 }
 
-export async function writeCloudBackup(workspace: WheelForgeData = loadData()): Promise<string> {
+export async function writeCloudBackup(workspace: WheelForgeData = loadData(), expectedUpdatedAt?: string): Promise<string> {
   const configuredClient = requireCloudClient();
   const user = await requireUser();
   const validatedWorkspace = parseImportData(JSON.stringify(workspace));
   const updatedAt = new Date().toISOString();
-  const { error } = await configuredClient.from("wheelforge_workspaces").upsert({
-    user_id: user.id,
-    payload: validatedWorkspace,
-    updated_at: updatedAt,
-  }, { onConflict: "user_id" });
+  const table = configuredClient.from("wheelforge_workspaces");
+  const { data: current, error: readError } = await table
+    .select("updated_at")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (readError) throw readError;
+  if (expectedUpdatedAt !== undefined && current?.updated_at !== expectedUpdatedAt) {
+    throw new CloudBackupConflictError();
+  }
+
+  if (!current) {
+    const { error } = await table.upsert({
+      user_id: user.id,
+      payload: validatedWorkspace,
+      updated_at: updatedAt,
+    }, { onConflict: "user_id" });
+    if (error) throw error;
+    return updatedAt;
+  }
+
+  const { data: updated, error } = await table
+    .update({ payload: validatedWorkspace, updated_at: updatedAt })
+    .eq("user_id", user.id)
+    .eq("updated_at", current.updated_at)
+    .select("updated_at")
+    .maybeSingle();
   if (error) throw error;
+  if (!updated) throw new CloudBackupConflictError();
   return updatedAt;
 }
 

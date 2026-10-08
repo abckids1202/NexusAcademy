@@ -26,6 +26,7 @@ const selectQuery = {
   eq: vi.fn(),
   maybeSingle: mocks.maybeSingle,
 };
+const updateQuery = { eq: vi.fn(), select: mocks.select, maybeSingle: mocks.maybeSingle };
 const deleteQuery = { eq: mocks.deleteEq };
 
 async function loadCloudService() {
@@ -53,6 +54,7 @@ beforeEach(() => {
   mocks.select.mockReturnValue(selectQuery);
   selectQuery.eq = vi.fn().mockReturnValue(selectQuery);
   mocks.maybeSingle.mockResolvedValue({ data: null, error: null });
+  updateQuery.eq.mockReturnValue(updateQuery);
   mocks.upsert.mockResolvedValue({ error: null });
   mocks.deleteEq.mockResolvedValue({ error: null });
   mocks.invoke.mockResolvedValue({ data: { deleted: true }, error: null });
@@ -62,6 +64,7 @@ beforeEach(() => {
   mocks.from.mockImplementation(() => ({
     select: mocks.select,
     upsert: mocks.upsert,
+    update: () => updateQuery,
     delete: () => deleteQuery,
   }));
 });
@@ -92,6 +95,23 @@ describe("cloud backup adapter", () => {
       user_id: user.id,
       payload: workspace,
     }), { onConflict: "user_id" });
+  });
+
+  it("rejects a stale cloud revision instead of overwriting a newer backup", async () => {
+    const cloud = await loadCloudService();
+    mocks.maybeSingle.mockResolvedValueOnce({ data: { updated_at: "2026-10-08T10:00:00.000Z" }, error: null });
+    await expect(cloud.writeCloudBackup(createEmptyData(), "2026-10-08T09:00:00.000Z"))
+      .rejects.toThrow("changed in another browser");
+    expect(mocks.upsert).not.toHaveBeenCalled();
+  });
+
+  it("uses an updated-at compare-and-swap when replacing an existing backup", async () => {
+    const cloud = await loadCloudService();
+    mocks.maybeSingle.mockResolvedValueOnce({ data: { updated_at: "2026-10-08T10:00:00.000Z" }, error: null });
+    updateQuery.maybeSingle.mockResolvedValueOnce({ data: { updated_at: "2026-10-08T11:00:00.000Z" }, error: null });
+    await cloud.writeCloudBackup(createEmptyData(), "2026-10-08T10:00:00.000Z");
+    expect(updateQuery.eq).toHaveBeenCalledWith("updated_at", "2026-10-08T10:00:00.000Z");
+    expect(mocks.upsert).not.toHaveBeenCalled();
   });
 
   it("validates downloaded payloads before exposing them to the app", async () => {
