@@ -29,6 +29,7 @@
 - Single-elimination setup supports best-of-1, best-of-3, and best-of-5 series. Each game is recorded independently, series scores remain pending until the win target is reached, whole-series forfeits are supported before play, and the latest game can be undone.
 - Local persistence classifies quota exhaustion separately from generic write failures and surfaces recovery guidance to export a backup and clear unused data.
 - Cloud backup writes re-read the current revision and use an `updated_at` compare-and-swap for existing records, rejecting stale browser uploads instead of silently overwriting a newer backup.
+- A repeatable `npm run verify:supabase:staging` script exercises two temporary authenticated users against a configured staging project, verifies own-row CRUD and cross-account read/update/delete isolation, and cleans up the test users with the service role.
 
 ## Release decision
 

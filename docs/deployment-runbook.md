@@ -10,6 +10,7 @@ This runbook describes a repeatable static deployment for the Vite application. 
 4. Create a staging Supabase project and apply `supabase/migrations/202609220001_wheelforge_private_workspaces.sql`.
 5. Configure Supabase Auth site URL and redirect URLs for the exact staging origin.
 6. Run the two-account RLS test against staging and manually verify sign-up, confirmation, recovery, backup restore, and account deletion.
+   The repeatable RLS command is `npm run verify:supabase:staging` with temporary values for `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and `SUPABASE_TEST_PASSWORD`. Run it from a trusted operator shell only; never expose the service-role key to Vite or commit it.
 
 ## Host configuration
 
