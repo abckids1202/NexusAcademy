@@ -153,3 +153,27 @@ test("using a generator template records the generator, not each component wheel
   await expect(page.getByRole("heading", { name: "Fantasy Story Generator" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Fantasy Factions" })).toHaveCount(0);
 });
+
+test("custom packs can be created, versioned, and restored", async ({ page }) => {
+  await page.goto("/templates");
+  await page.getByRole("button", { name: "Create pack" }).click();
+  await page.getByLabel("Pack wheels").selectOption({ index: 0 });
+  page.on("dialog", async (dialog) => dialog.accept(dialog.type() === "prompt" && dialog.message().includes("Name") ? "Friday kit" : "A reusable event kit"));
+  await page.getByRole("button", { name: "Save custom pack" }).click();
+
+  const pack = page.locator(".template-item").filter({ has: page.getByRole("heading", { name: "Friday kit" }) });
+  await expect(pack).toContainText("v1");
+  await pack.getByText("Update pack contents").click();
+  await pack.getByLabel("Wheels for Friday kit").selectOption(await pack.getByLabel("Wheels for Friday kit").locator("option").evaluateAll((options) => options.map((option) => (option as HTMLOptionElement).value)));
+  await pack.getByRole("button", { name: "Save new version" }).click();
+  const versionAfterUpdate = await page.evaluate(() => JSON.parse(localStorage.getItem("wheelforge_data_v1") ?? "null").userTemplatePacks.find((item: { title: string }) => item.title === "Friday kit")?.version);
+  expect(versionAfterUpdate).toBe(2);
+  await page.reload();
+  const updatedPack = page.locator(".template-item").filter({ has: page.getByRole("heading", { name: "Friday kit" }) });
+  await expect(updatedPack).toContainText("v2");
+  await updatedPack.getByText("Update pack contents").click();
+  await expect(updatedPack.getByLabel("Previous version for Friday kit")).toBeVisible();
+  await updatedPack.getByLabel("Previous version for Friday kit").selectOption("1");
+  await page.reload();
+  await expect(page.locator(".template-item").filter({ has: page.getByRole("heading", { name: "Friday kit" }) })).toContainText("v3");
+});

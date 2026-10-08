@@ -52,6 +52,14 @@ export type TournamentPreset = {
 
 export type TemplatePackCategory = "classroom" | "giveaway" | "creative" | "game" | "tournament";
 
+export type TemplatePackRevision = {
+  version: number;
+  createdAt: string;
+  wheels: WheelTemplate[];
+  chains: ChainTemplate[];
+  tournamentPreset?: TournamentPreset;
+};
+
 export type TemplatePack = {
   id: string;
   title: string;
@@ -65,6 +73,7 @@ export type TemplatePack = {
   wheels: WheelTemplate[];
   chains: ChainTemplate[];
   tournamentPreset?: TournamentPreset;
+  history?: TemplatePackRevision[];
 };
 
 export type WheelOptionTemplate = Omit<WheelOption, "id" | "sortOrder"> & {

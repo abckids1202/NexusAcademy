@@ -1,5 +1,5 @@
 import { templatePacks } from "../data/templatePacks";
-import type { ChainTemplate, TemplatePack, Wheel, WheelTemplate, SpinChain } from "../types";
+import type { ChainTemplate, TemplatePack, TemplatePackRevision, Wheel, WheelTemplate, SpinChain } from "../types";
 import { createId } from "../utils/ids";
 import { loadData, saveData } from "./storageService";
 import { getTemplatePackValidationErrors } from "../utils/templatePackValidation";
@@ -11,6 +11,17 @@ export type TemplatePackInstallPreview = {
   wheelCount: number;
   chainCount: number;
   warnings: string[];
+};
+
+export type TemplatePackDiff = {
+  fromVersion: number;
+  toVersion: number;
+  addedWheels: string[];
+  removedWheels: string[];
+  changedWheels: string[];
+  addedChains: string[];
+  removedChains: string[];
+  changedChains: string[];
 };
 
 function cloneWheel(source: WheelTemplate["wheel"] | Wheel, title: string, description: string): Wheel {
@@ -25,6 +36,56 @@ function snapshotWheel(wheel: Wheel): WheelTemplate {
   return {
     id: createId("pack_wheel"), title: wheel.title, description: wheel.description,
     category: "creative", wheel: { ...wheel, id: undefined, createdAt: undefined, updatedAt: undefined } as unknown as WheelTemplate["wheel"],
+  };
+}
+
+function snapshotRevision(pack: TemplatePack): TemplatePackRevision {
+  return {
+    version: pack.version,
+    createdAt: pack.updatedAt,
+    wheels: pack.wheels.map((wheel) => ({ ...wheel, wheel: { ...wheel.wheel, options: wheel.wheel.options.map((option) => ({ ...option })) } })),
+    chains: pack.chains.map((chain) => ({ ...chain, steps: chain.steps.map((step) => ({ ...step })) })),
+    ...(pack.tournamentPreset ? { tournamentPreset: { ...pack.tournamentPreset, scoring: pack.tournamentPreset.scoring ? { ...pack.tournamentPreset.scoring } : undefined } } : {}),
+  };
+}
+
+function snapshotSelection(data: ReturnType<typeof loadData>, wheelIds: string[], chainIds: string[]): Pick<TemplatePack, "wheels" | "chains"> {
+  const wheels = data.wheels.filter((item) => wheelIds.includes(item.id));
+  const chains = data.chains.filter((item) => chainIds.includes(item.id));
+  if (wheels.length !== new Set(wheelIds).size || chains.length !== new Set(chainIds).size) throw new Error("One or more selected pack items no longer exists.");
+  const wheelTemplates = wheels.map(snapshotWheel);
+  const wheelMap = new Map(wheels.map((item, index) => [item.id, wheelTemplates[index].id]));
+  const chainTemplates: ChainTemplate[] = chains.map((source) => ({
+    id: createId("pack_chain"), title: source.title, description: source.description, category: "creative",
+    steps: source.steps.map((step) => ({ ...step, id: undefined, chainId: undefined, wheelId: undefined, wheelTemplateId: wheelMap.get(step.wheelId) ?? "" })) as unknown as ChainTemplate["steps"],
+  }));
+  if (chainTemplates.some((chain) => chain.steps.some((step) => !step.wheelTemplateId))) throw new Error("Every selected generator must include its referenced wheels.");
+  return { wheels: wheelTemplates, chains: chainTemplates };
+}
+
+function namesById(items: Array<{ id: string; title: string }>): Map<string, string> {
+  return new Map(items.map((item) => [item.id, item.title]));
+}
+
+function changedIds<T extends { id: string }>(before: T[], after: T[]): string[] {
+  const previous = new Map(before.map((item) => [item.id, JSON.stringify(item)]));
+  return after.filter((item) => previous.has(item.id) && previous.get(item.id) !== JSON.stringify(item)).map((item) => item.id);
+}
+
+export function getTemplatePackDiff(before: TemplatePack, after: Pick<TemplatePack, "wheels" | "chains"> & { version: number }): TemplatePackDiff {
+  const beforeWheels = namesById(before.wheels);
+  const afterWheels = namesById(after.wheels);
+  const beforeChains = namesById(before.chains);
+  const afterChains = namesById(after.chains);
+  return {
+    fromVersion: before.version,
+    toVersion: after.version,
+    addedWheels: after.wheels.filter((item) => !beforeWheels.has(item.id)).map((item) => item.title),
+    removedWheels: before.wheels.filter((item) => !afterWheels.has(item.id)).map((item) => item.title),
+    changedWheels: changedIds(before.wheels, after.wheels).map((id) => afterWheels.get(id) ?? id),
+    addedChains: after.chains.filter((item) => !beforeChains.has(item.id)).map((item) => item.title),
+    removedChains: before.chains.filter((item) => !afterChains.has(item.id)).map((item) => item.title),
+    changedChains: changedIds(before.chains, after.chains).map((id) => afterChains.get(id) ?? id),
   };
 }
 
@@ -83,19 +144,47 @@ export function installTemplatePack(packId: string): { wheels: Wheel[]; chains: 
 
 export function saveSelectionAsTemplatePack(title: string, description: string, wheelIds: string[], chainIds: string[]): TemplatePack {
   const data = loadData();
-  const wheels = data.wheels.filter((item) => wheelIds.includes(item.id));
-  const chains = data.chains.filter((item) => chainIds.includes(item.id));
   if (!title.trim()) throw new Error("Give this pack a name.");
-  const wheelTemplates = wheels.map(snapshotWheel);
-  const wheelMap = new Map(wheels.map((item, index) => [item.id, wheelTemplates[index].id]));
-  const chainTemplates: ChainTemplate[] = chains.map((source) => ({
-    id: createId("pack_chain"), title: source.title, description: source.description, category: "creative",
-    steps: source.steps.map((step) => ({ ...step, id: undefined, chainId: undefined, wheelId: undefined, wheelTemplateId: wheelMap.get(step.wheelId) ?? "" })) as unknown as ChainTemplate["steps"],
-  }));
+  const selection = snapshotSelection(data, wheelIds, chainIds);
   const now = new Date().toISOString();
-  const pack: TemplatePack = { id: createId("pack"), title: title.trim(), description: description.trim(), category: "creative", tags: [], version: 1, source: "user", createdAt: now, updatedAt: now, wheels: wheelTemplates, chains: chainTemplates };
+  const pack: TemplatePack = { id: createId("pack"), title: title.trim(), description: description.trim(), category: "creative", tags: [], version: 1, source: "user", createdAt: now, updatedAt: now, ...selection, history: [] };
   saveData({ ...data, userTemplatePacks: [pack, ...data.userTemplatePacks] });
   return pack;
+}
+
+export function updateTemplatePackFromSelection(packId: string, wheelIds: string[], chainIds: string[]): { pack: TemplatePack; diff: TemplatePackDiff } | undefined {
+  const data = loadData();
+  const existing = data.userTemplatePacks.find((pack) => pack.id === packId);
+  if (!existing) return undefined;
+  const selection = snapshotSelection(data, wheelIds, chainIds);
+  const nextVersion = existing.version + 1;
+  const updated: TemplatePack = {
+    ...existing,
+    ...selection,
+    version: nextVersion,
+    updatedAt: new Date().toISOString(),
+    history: [...(existing.history ?? []), snapshotRevision(existing)],
+  };
+  const diff = getTemplatePackDiff(existing, { ...selection, version: nextVersion });
+  saveData({ ...data, userTemplatePacks: data.userTemplatePacks.map((pack) => pack.id === packId ? updated : pack) });
+  return { pack: updated, diff };
+}
+
+export function restoreTemplatePackVersion(packId: string, version: number): TemplatePack | undefined {
+  const data = loadData();
+  const existing = data.userTemplatePacks.find((pack) => pack.id === packId);
+  const revision = existing?.history?.find((item) => item.version === version);
+  if (!existing || !revision) return undefined;
+  const restored: TemplatePack = {
+    ...existing,
+    wheels: revision.wheels.map((wheel) => ({ ...wheel, wheel: { ...wheel.wheel, options: wheel.wheel.options.map((option) => ({ ...option })) } })),
+    chains: revision.chains.map((chain) => ({ ...chain, steps: chain.steps.map((step) => ({ ...step })) })),
+    version: existing.version + 1,
+    updatedAt: new Date().toISOString(),
+    history: [...(existing.history ?? []), snapshotRevision(existing)],
+  };
+  saveData({ ...data, userTemplatePacks: data.userTemplatePacks.map((pack) => pack.id === packId ? restored : pack) });
+  return restored;
 }
 
 export function renameTemplatePack(packId: string, title: string): TemplatePack | undefined {

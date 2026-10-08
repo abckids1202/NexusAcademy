@@ -19,4 +19,11 @@ describe("template pack validation", () => {
     ]));
     expect(isValidTemplatePack(source)).toBe(false);
   });
+
+  it("validates historical snapshots instead of trusting only the current version", () => {
+    const source = structuredClone(templatePacks.find((pack) => pack.id === "fantasy-story-lab")!);
+    source.history = [{ version: 1, createdAt: source.createdAt, wheels: [], chains: [{ ...source.chains[0], steps: [{ ...source.chains[0].steps[0], wheelTemplateId: "missing-wheel" }] }] }];
+    expect(getTemplatePackValidationErrors(source)).toContain("Chain template 1 step 1 is invalid or references a missing wheel.");
+    expect(isValidTemplatePack(source)).toBe(false);
+  });
 });

@@ -1382,6 +1382,34 @@ textarea.text-field {
   min-width: 0;
 }
 
+.template-builder {
+  display: grid;
+  gap: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+  padding: 18px;
+}
+
+.template-builder .section-title {
+  align-items: flex-start;
+}
+
+.template-builder .section-title p {
+  margin: 6px 0 0;
+}
+
+.template-builder-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.template-builder select[multiple],
+.template-update-details select[multiple] {
+  min-height: 112px;
+}
+
 .template-favorite {
   display: grid;
   width: 36px;
@@ -1501,6 +1529,12 @@ textarea.text-field {
 .template-update-details .muted {
   margin: 8px 0 0;
   font-size: 0.82rem;
+}
+
+@media (max-width: 640px) {
+  .template-builder-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .template-chain-preview {

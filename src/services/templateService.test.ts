@@ -13,7 +13,7 @@ import {
   toggleTemplateFavorite,
 } from "./templateService";
 import { validateChain } from "../utils/validation";
-import { getTemplatePacks, installTemplatePack, previewTemplatePackInstall, togglePackFavorite } from "./templatePackService";
+import { getTemplatePacks, installTemplatePack, previewTemplatePackInstall, restoreTemplatePackVersion, saveSelectionAsTemplatePack, togglePackFavorite, updateTemplatePackFromSelection } from "./templatePackService";
 
 function installWorkspace() {
   const values = new Map<string, string>([[STORAGE_KEY, JSON.stringify(createDemoData())]]);
@@ -138,5 +138,23 @@ describe("template packs", () => {
     expect(togglePackFavorite("tournament-night")).toBe(true);
     expect(loadData().favoritePackIds).toContain("tournament-night");
     expect(loadData().userTemplatePacks).toEqual([]);
+  });
+
+  it("versions custom packs independently and can restore a prior snapshot", () => {
+    installWorkspace();
+    const data = loadData();
+    const initial = saveSelectionAsTemplatePack("My kit", "A test kit", [data.wheels[0].id], []);
+    expect(initial.version).toBe(1);
+    const updated = updateTemplatePackFromSelection(initial.id, [data.wheels[1].id], [])!;
+    expect(updated.pack.version).toBe(2);
+    expect(updated.pack.history?.map((revision) => revision.version)).toEqual([1]);
+    expect(updated.diff.addedWheels).toHaveLength(1);
+    expect(updated.diff.removedWheels).toHaveLength(1);
+
+    const restored = restoreTemplatePackVersion(initial.id, 1)!;
+    expect(restored.version).toBe(3);
+    expect(restored.wheels[0].title).toBe(data.wheels[0].title);
+    expect(restored.history?.map((revision) => revision.version)).toEqual([1, 2]);
+    expect(loadData().userTemplatePacks[0].version).toBe(3);
   });
 });

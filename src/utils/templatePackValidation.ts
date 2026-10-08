@@ -54,6 +54,21 @@ function validateChainTemplate(value: unknown, index: number, wheelIds: Set<stri
   return errors;
 }
 
+function validatePackContents(wheelsValue: unknown, chainsValue: unknown, label: string): string[] {
+  const errors: string[] = [];
+  if (!Array.isArray(wheelsValue)) errors.push(`The template pack ${label} wheels are invalid.`);
+  if (!Array.isArray(chainsValue)) errors.push(`The template pack ${label} chains are invalid.`);
+  if (!Array.isArray(wheelsValue) || !Array.isArray(chainsValue)) return errors;
+  const wheelIds = new Set<string>();
+  wheelsValue.forEach((wheel, index) => {
+    errors.push(...validateWheelTemplate(wheel, index));
+    if (isRecord(wheel) && typeof wheel.id === "string") wheelIds.add(wheel.id);
+  });
+  if (wheelIds.size !== wheelsValue.length) errors.push(`The template pack ${label} contains duplicate wheel IDs.`);
+  chainsValue.forEach((chain, index) => errors.push(...validateChainTemplate(chain, index, wheelIds)));
+  return errors;
+}
+
 export function getTemplatePackValidationErrors(value: unknown): string[] {
   if (!isRecord(value)) return ["The template pack is not an object."];
   const errors: string[] = [];
@@ -65,15 +80,18 @@ export function getTemplatePackValidationErrors(value: unknown): string[] {
   if (typeof value.version !== "number" || !Number.isInteger(value.version) || value.version < 1) errors.push("The template pack version is invalid.");
   if (value.source !== "built-in" && value.source !== "user") errors.push("The template pack source is invalid.");
   if (typeof value.createdAt !== "string" || typeof value.updatedAt !== "string") errors.push("The template pack timestamps are invalid.");
-  if (!Array.isArray(value.wheels)) errors.push("The template pack wheels are invalid.");
-  if (!Array.isArray(value.chains)) errors.push("The template pack chains are invalid.");
-  const wheelIds = new Set<string>();
-  if (Array.isArray(value.wheels)) value.wheels.forEach((wheel, index) => {
-    errors.push(...validateWheelTemplate(wheel, index));
-    if (isRecord(wheel) && typeof wheel.id === "string") wheelIds.add(wheel.id);
-  });
-  if (wheelIds.size !== (Array.isArray(value.wheels) ? value.wheels.length : 0)) errors.push("The template pack contains duplicate wheel IDs.");
-  if (Array.isArray(value.chains)) value.chains.forEach((chain, index) => errors.push(...validateChainTemplate(chain, index, wheelIds)));
+  errors.push(...validatePackContents(value.wheels, value.chains, ""));
+  if (value.history !== undefined) {
+    if (!Array.isArray(value.history)) errors.push("The template pack history is invalid.");
+    else value.history.forEach((revision, index) => {
+      if (!isRecord(revision) || typeof revision.version !== "number" || !Number.isInteger(revision.version) || revision.version < 1 ||
+        typeof revision.createdAt !== "string") {
+        errors.push(`Template pack revision ${index + 1} has invalid metadata.`);
+      } else {
+        errors.push(...validatePackContents(revision.wheels, revision.chains, `revision ${revision.version}`));
+      }
+    });
+  }
   return errors;
 }
 

@@ -21,7 +21,7 @@ import {
 import type { UserTemplate } from "../types";
 import { getChains } from "../services/chainService";
 import { getWheels } from "../services/wheelService";
-import { deleteTemplatePack, exportTemplatePack, getTemplatePacks, importTemplatePack, installTemplatePack, renameTemplatePack, togglePackFavorite } from "../services/templatePackService";
+import { deleteTemplatePack, exportTemplatePack, getTemplatePacks, importTemplatePack, installTemplatePack, renameTemplatePack, restoreTemplatePackVersion, saveSelectionAsTemplatePack, togglePackFavorite, updateTemplatePackFromSelection } from "../services/templatePackService";
 
 type TemplateKind = "all" | "wheel" | "chain" | "favorites" | "recent" | "mine";
 
@@ -31,6 +31,10 @@ export function TemplatesPage() {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");
   const [replacementSourceIds, setReplacementSourceIds] = useState<Record<string, string>>({});
+  const [packBuilderOpen, setPackBuilderOpen] = useState(false);
+  const [packWheelIds, setPackWheelIds] = useState<string[]>([]);
+  const [packChainIds, setPackChainIds] = useState<string[]>([]);
+  const [packUpdateSelections, setPackUpdateSelections] = useState<Record<string, { wheelIds: string[]; chainIds: string[] }>>({});
   useDataRevision();
 
   const { favoriteTemplateIds: favoriteIds, recentTemplateIds } = loadData();
@@ -154,6 +158,41 @@ export function TemplatesPage() {
     event.target.value = "";
   }
 
+  function createCustomPack() {
+    if (packWheelIds.length === 0 && packChainIds.length === 0) {
+      window.alert("Select at least one wheel or generator.");
+      return;
+    }
+    const title = window.prompt("Name this template pack", "My event kit");
+    if (!title?.trim()) return;
+    const description = window.prompt("Describe this pack", "A reusable set of wheels and generators.") ?? "";
+    try {
+      saveSelectionAsTemplatePack(title, description, packWheelIds, packChainIds);
+      setPackBuilderOpen(false);
+      setPackWheelIds([]);
+      setPackChainIds([]);
+    } catch (error) { window.alert(error instanceof Error ? error.message : "Could not create this pack."); }
+  }
+
+  function selectionForPack(packId: string) {
+    return packUpdateSelections[packId] ?? { wheelIds: savedWheels.map((wheel) => wheel.id), chainIds: savedChains.map((chain) => chain.id) };
+  }
+
+  function updateCustomPack(packId: string, title: string) {
+    const selection = selectionForPack(packId);
+    try {
+      const result = updateTemplatePackFromSelection(packId, selection.wheelIds, selection.chainIds);
+      if (!result) return;
+      const changed = [...result.diff.addedWheels, ...result.diff.removedWheels, ...result.diff.changedWheels, ...result.diff.addedChains, ...result.diff.removedChains, ...result.diff.changedChains];
+      window.alert(`${title} updated to version ${result.pack.version}. ${changed.length} component change${changed.length === 1 ? "" : "s"} recorded.`);
+    } catch (error) { window.alert(error instanceof Error ? error.message : "Could not update this pack."); }
+  }
+
+  function restoreCustomPack(packId: string, title: string, version: number) {
+    if (!window.confirm(`Restore ${title} to version ${version}? This creates a new version and keeps the current version in history.`)) return;
+    try { restoreTemplatePackVersion(packId, version); } catch (error) { window.alert(error instanceof Error ? error.message : "Could not restore this pack version."); }
+  }
+
   function favoriteButton(templateId: string, title: string) {
     const isFavorite = favoriteIds.includes(templateId);
     return <button
@@ -166,7 +205,7 @@ export function TemplatesPage() {
   }
 
   return <div className="stack">
-    <PageHeader eyebrow="Templates" title="Start with a template" description="Ready-made wheels, multi-step generators, and event kits. Every install becomes your own editable copy." actions={<label className="secondary-button"><Upload size={16} /> Import pack<input className="sr-only" type="file" accept="application/json,.json" onChange={handlePackImport} /></label>} />
+    <PageHeader eyebrow="Templates" title="Start with a template" description="Ready-made wheels, multi-step generators, and event kits. Every install becomes your own editable copy." actions={<div className="topbar-actions"><button className="secondary-button" type="button" onClick={() => setPackBuilderOpen((current) => !current)}><Package size={16} /> {packBuilderOpen ? "Close pack builder" : "Create pack"}</button><label className="secondary-button"><Upload size={16} /> Import pack<input className="sr-only" type="file" accept="application/json,.json" onChange={handlePackImport} /></label></div>} />
     <div className="filter-tabs" role="group" aria-label="Filter templates">
       {(["all", "wheel", "chain", "favorites", "recent", "mine"] as const).map((item) => <button key={item} className={filter === item ? "filter-tab active" : "filter-tab"} type="button" aria-pressed={filter === item} onClick={() => setFilter(item)}>
         {item === "all" ? "All templates" : item === "wheel" ? "Wheels" : item === "chain" ? "Generators" : item === "favorites" ? `Favorites (${favoriteIds.length})` : item === "recent" ? `Recent (${recentTemplateIds.length})` : `My templates (${userTemplates.length})`}
@@ -176,12 +215,21 @@ export function TemplatesPage() {
       <label className="template-search"><Search size={17} aria-hidden="true" /><span className="sr-only">Search templates</span><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by name, category, step, or option" /></label>
       <label className="template-category"><span>Category</span><select className="select-field" value={category} onChange={(event) => setCategory(event.target.value)}><option value="all">All categories</option>{categories.map((item) => <option key={item} value={item}>{item[0].toUpperCase() + item.slice(1)}</option>)}</select></label>
     </div>
+    {packBuilderOpen && <section className="template-builder" aria-label="Create template pack">
+      <div className="section-title"><div><h2><Package size={19} /> Build a custom pack</h2><p className="muted">Choose saved components. The pack stores independent snapshots and can be versioned later.</p></div></div>
+      <div className="template-builder-grid">
+        <label className="field-stack"><span>Wheels</span><select className="select-field" multiple size={Math.min(6, Math.max(3, savedWheels.length))} aria-label="Pack wheels" value={packWheelIds} onChange={(event) => setPackWheelIds(Array.from(event.target.selectedOptions, (option) => option.value))}>{savedWheels.map((wheel) => <option key={wheel.id} value={wheel.id}>{wheel.title}</option>)}</select></label>
+        <label className="field-stack"><span>Generators</span><select className="select-field" multiple size={Math.min(6, Math.max(3, savedChains.length))} aria-label="Pack generators" value={packChainIds} onChange={(event) => setPackChainIds(Array.from(event.target.selectedOptions, (option) => option.value))}>{savedChains.map((chain) => <option key={chain.id} value={chain.id}>{chain.title}</option>)}</select></label>
+      </div>
+      <button className="primary-link" type="button" onClick={createCustomPack}>Save custom pack</button>
+    </section>}
     {(filter === "all" || filter === "favorites" || filter === "recent" || filter === "mine") && packs.length > 0 && <section className="stack template-section"><div className="section-title"><h2><Package size={19} /> Template packs</h2><span>{packs.length} kits</span></div><div className="feature-grid">
       {packs.map((pack) => { const favorite = favoritePackIds.includes(pack.id); const userPack = pack.source === "user"; return <article className="template-item" key={pack.id}>
         <button className={favorite ? "template-favorite active" : "template-favorite"} type="button" aria-label={`${favorite ? "Remove" : "Add"} ${pack.title} ${favorite ? "from" : "to"} favorites`} aria-pressed={favorite} onClick={() => togglePackFavorite(pack.id)}><Heart size={17} fill={favorite ? "currentColor" : "none"} /></button>
         <div className="template-swatch-row pack-swatch" aria-hidden="true"><span /><span /><span /><span /></div>
         <div className="template-item-copy"><span className="eyebrow">{pack.category} kit · v{pack.version}</span><h3>{pack.title}</h3><p>{pack.description}</p><small>{pack.wheels.length} wheels · {pack.chains.length} generators{pack.tournamentPreset ? " · tournament setup" : ""}</small></div>
         <button className="secondary-link" type="button" onClick={() => installPack(pack.id)}>Install pack <ArrowRight size={16} /></button>
+        {userPack && <details className="template-update-details"><summary>Update pack contents</summary><label className="field-stack"><span>Wheels</span><select className="select-field" multiple size={Math.min(5, Math.max(3, savedWheels.length))} aria-label={`Wheels for ${pack.title}`} value={selectionForPack(pack.id).wheelIds} onChange={(event) => setPackUpdateSelections((current) => ({ ...current, [pack.id]: { ...selectionForPack(pack.id), wheelIds: Array.from(event.target.selectedOptions, (option) => option.value) } }))}>{savedWheels.map((wheel) => <option key={wheel.id} value={wheel.id}>{wheel.title}</option>)}</select></label><label className="field-stack"><span>Generators</span><select className="select-field" multiple size={Math.min(5, Math.max(3, savedChains.length))} aria-label={`Generators for ${pack.title}`} value={selectionForPack(pack.id).chainIds} onChange={(event) => setPackUpdateSelections((current) => ({ ...current, [pack.id]: { ...selectionForPack(pack.id), chainIds: Array.from(event.target.selectedOptions, (option) => option.value) } }))}>{savedChains.map((chain) => <option key={chain.id} value={chain.id}>{chain.title}</option>)}</select></label><button className="secondary-link" type="button" onClick={() => updateCustomPack(pack.id, pack.title)}>Save new version</button>{(pack.history?.length ?? 0) > 0 && <label className="field-stack"><span>Restore previous version</span><select className="select-field" aria-label={`Previous version for ${pack.title}`} defaultValue="" onChange={(event) => { if (event.target.value) restoreCustomPack(pack.id, pack.title, Number(event.target.value)); event.target.value = ""; }}><option value="">Choose a version</option>{[...(pack.history ?? [])].reverse().map((revision) => <option key={revision.version} value={revision.version}>Version {revision.version}</option>)}</select></label>}<p className="muted">Each update keeps the prior snapshot. Current version: {pack.version}.</p></details>}
         <div className="user-template-actions"><button className="square-action" type="button" title={`Export ${pack.title}`} aria-label={`Export ${pack.title}`} onClick={() => downloadPack(pack.id)}><Download size={15} /></button>{userPack && <><button className="square-action" type="button" title={`Rename ${pack.title}`} aria-label={`Rename ${pack.title}`} onClick={() => { const title = window.prompt("Rename this pack", pack.title); if (title?.trim()) renameTemplatePack(pack.id, title); }}><Pencil size={15} /></button><button className="square-action danger-action" type="button" title={`Delete ${pack.title}`} aria-label={`Delete ${pack.title}`} onClick={() => { if (window.confirm(`Delete the pack “${pack.title}”?`)) deleteTemplatePack(pack.id); }}><Trash2 size={15} /></button></>}</div>
       </article>; })}
     </div></section>}
