@@ -1,4 +1,4 @@
-import type { RoundRobinScoring, RoundRobinTiebreaker, Tournament, TournamentByePolicy, TournamentConditionDraw, TournamentFormat, TournamentParticipantAttendance, TournamentSeeding, TournamentWithdrawalPolicy } from "../types";
+import type { RoundRobinScoring, RoundRobinTiebreaker, Tournament, TournamentBestOf, TournamentByePolicy, TournamentConditionDraw, TournamentFormat, TournamentParticipantAttendance, TournamentSeeding, TournamentWithdrawalPolicy } from "../types";
 import { createId } from "../utils/ids";
 import {
   createSingleEliminationTournament,
@@ -56,6 +56,7 @@ export function createTournamentPreview(
   byePolicy?: TournamentByePolicy,
   withdrawalPolicy?: TournamentWithdrawalPolicy,
   thirdPlaceMatch = false,
+  bestOf: TournamentBestOf = 1,
 ): Tournament {
   if (seeding === "manual") {
     const seats = names.map((name) => metadataByName[name.toLocaleLowerCase()]?.seat);
@@ -69,7 +70,7 @@ export function createTournamentPreview(
   const entrants = orderedNames.map((name) => ({ id: createId("participant"), name, ...(metadataByName[name.toLocaleLowerCase()] ?? {}) }));
   const tournament = format === "round-robin"
     ? createRoundRobinTournament(title, entrants, { seeding, roundRobinTiebreaker, scoring, byePolicy, withdrawalPolicy })
-    : createSingleEliminationTournament(title, entrants, { seeding, byePolicy, withdrawalPolicy, thirdPlaceMatch });
+    : createSingleEliminationTournament(title, entrants, { seeding, byePolicy, withdrawalPolicy, thirdPlaceMatch, bestOf });
   return tournament;
 }
 
@@ -93,8 +94,9 @@ export function createTournament(
   byePolicy?: TournamentByePolicy,
   withdrawalPolicy?: TournamentWithdrawalPolicy,
   thirdPlaceMatch = false,
+  bestOf: TournamentBestOf = 1,
 ): Tournament {
-  return createTournamentFromPreview(createTournamentPreview(title, names, seeding, format, roundRobinTiebreaker, scoring, metadataByName, byePolicy, withdrawalPolicy, thirdPlaceMatch));
+  return createTournamentFromPreview(createTournamentPreview(title, names, seeding, format, roundRobinTiebreaker, scoring, metadataByName, byePolicy, withdrawalPolicy, thirdPlaceMatch, bestOf));
 }
 
 export function updateTournamentSetup(
@@ -109,13 +111,14 @@ export function updateTournamentSetup(
   byePolicy?: TournamentByePolicy,
   withdrawalPolicy?: TournamentWithdrawalPolicy,
   thirdPlaceMatch?: boolean,
+  bestOf?: TournamentBestOf,
 ): Tournament {
   const tournament = getTournament(tournamentId);
   if (!tournament) throw new Error("Tournament not found.");
   if (expectedUpdatedAt !== undefined && tournament.updatedAt !== expectedUpdatedAt) {
     throw new StaleEditError("tournament");
   }
-  return saveTournament(rebuildTournamentSetup(tournament, title, names, seeding, format, undefined, roundRobinTiebreaker, scoring, byePolicy ?? tournament.byePolicy ?? "automatic", withdrawalPolicy ?? tournament.withdrawalPolicy ?? "advance-opponent", thirdPlaceMatch ?? tournament.thirdPlaceMatch ?? false));
+  return saveTournament(rebuildTournamentSetup(tournament, title, names, seeding, format, undefined, roundRobinTiebreaker, scoring, byePolicy ?? tournament.byePolicy ?? "automatic", withdrawalPolicy ?? tournament.withdrawalPolicy ?? "advance-opponent", thirdPlaceMatch ?? tournament.thirdPlaceMatch ?? false, bestOf ?? tournament.bestOf ?? 1));
 }
 
 export function recordTournamentMatchBye(tournamentId: string, matchId: string): Tournament {

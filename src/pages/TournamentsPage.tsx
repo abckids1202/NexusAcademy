@@ -5,7 +5,7 @@ import { PageHeader } from "../components/common/PageHeader";
 import { ShellCard } from "../components/common/ShellCard";
 import { createTournamentFromPreview, createTournamentPreview, deleteTournament, type TournamentRosterMetadata } from "../services/tournamentService";
 import { useTournaments } from "../hooks/useTournaments";
-import type { RoundRobinScoring, RoundRobinTiebreaker, Tournament, TournamentByePolicy, TournamentFormat, TournamentMatch, TournamentSeeding, TournamentWithdrawalPolicy } from "../types";
+import type { RoundRobinScoring, RoundRobinTiebreaker, Tournament, TournamentBestOf, TournamentByePolicy, TournamentFormat, TournamentMatch, TournamentSeeding, TournamentWithdrawalPolicy } from "../types";
 import { MAX_ROUND_ROBIN_PARTICIPANTS, MAX_TOURNAMENT_PARTICIPANTS, getTournamentProgress, getTournamentRoundLabel, isValidRoundRobinScoring, shuffleParticipants } from "../utils/tournamentLogic";
 import { parseParticipantNames } from "../utils/participantImport";
 import { inspectParticipantCsv, parseParticipantCsvColumn, type CsvParticipantPreview, type ParticipantCsvInspection } from "../utils/csvImport";
@@ -47,6 +47,7 @@ export function TournamentsPage() {
   const [byePolicy, setByePolicy] = useState<TournamentByePolicy>("automatic");
   const [withdrawalPolicy, setWithdrawalPolicy] = useState<TournamentWithdrawalPolicy>("advance-opponent");
   const [thirdPlaceMatch, setThirdPlaceMatch] = useState(false);
+  const [bestOf, setBestOf] = useState<TournamentBestOf>(1);
   const [format, setFormat] = useState<TournamentFormat>("single-elimination");
   const [roundRobinTiebreaker, setRoundRobinTiebreaker] = useState<RoundRobinTiebreaker>("seed");
   const [scoring, setScoring] = useState<RoundRobinScoring>(() => ({ ...defaultRoundRobinScoring }));
@@ -160,7 +161,7 @@ export function TournamentsPage() {
     event.preventDefault();
     setError("");
     try {
-      setPreview(createTournamentPreview(title, parsedParticipants.names, seeding, format, roundRobinTiebreaker, scoring, metadataByName, byePolicy, withdrawalPolicy, thirdPlaceMatch));
+      setPreview(createTournamentPreview(title, parsedParticipants.names, seeding, format, roundRobinTiebreaker, scoring, metadataByName, byePolicy, withdrawalPolicy, thirdPlaceMatch, bestOf));
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Could not prepare the tournament preview.");
     }
@@ -279,6 +280,7 @@ export function TournamentsPage() {
               <option value="third-place">Add third-place match</option>
             </select>
           </label>}
+          {format === "single-elimination" && <label className="field-stack"><span>Match series</span><select className="select-field" value={bestOf} onChange={(event) => { invalidatePreview(); setBestOf(Number(event.target.value) as TournamentBestOf); }}><option value="1">Single game</option><option value="3">Best of 3</option><option value="5">Best of 5</option></select></label>}
           {thirdPlaceMatch && parsedParticipants.names.length < 4 && <p className="validation-message" role="alert">A third-place match requires at least four participants.</p>}
           {seeding === "manual" && !manualSeedValid && <p className="validation-message" role="alert">Assign a unique positive seat number to every participant before previewing manual seeds.</p>}
           {format === "round-robin" && <label className="field-stack">
@@ -306,7 +308,7 @@ export function TournamentsPage() {
         </form>
         {preview && <section className="tournament-preview" aria-label="Tournament preview">
           <header className="tournament-preview-header">
-            <div><p className="eyebrow">Review before creating</p><h2>{preview.title}</h2><p>{preview.format === "round-robin" ? `Round robin · ${preview.roundRobinTiebreaker === "head-to-head" ? "Head-to-head tiebreak" : "Seed-order tiebreak"} · ${preview.scoring?.winPoints ?? 3}/${preview.scoring?.drawPoints ?? 1}/${preview.scoring?.lossPoints ?? 0} win/draw/loss points` : "Single elimination"} · {preview.participants.length} participants · {getTournamentProgress(preview).total} matches</p></div>
+            <div><p className="eyebrow">Review before creating</p><h2>{preview.title}</h2><p>{preview.format === "round-robin" ? `Round robin · ${preview.roundRobinTiebreaker === "head-to-head" ? "Head-to-head tiebreak" : "Seed-order tiebreak"} · ${preview.scoring?.winPoints ?? 3}/${preview.scoring?.drawPoints ?? 1}/${preview.scoring?.lossPoints ?? 0} win/draw/loss points` : `Single elimination · Best of ${preview.bestOf}`} · {preview.participants.length} participants · {getTournamentProgress(preview).total} matches</p></div>
             <span className="tournament-preview-seeding">{preview.seeding === "random" ? "Random seeding" : preview.seeding === "manual" ? "Manual seat order" : "Entry order"} · {preview.byePolicy === "manual" ? "Manual byes" : "Automatic byes"} · {preview.withdrawalPolicy === "preserve-fixtures" ? "Preserve withdrawals" : "Advance withdrawals"}{preview.thirdPlaceMatch ? " · Third-place match" : ""}</span>
           </header>
           {preview.seeding === "random" && <p className="muted">This shuffled seed order is fixed for this preview and will be used when you create the tournament.</p>}
@@ -319,7 +321,7 @@ export function TournamentsPage() {
           </div>
           <div className="hero-actions">
             <button className="primary-link" type="button" onClick={handleCreatePreview}><Trophy size={16} /> Create this tournament</button>
-            <button className="secondary-link" type="button" onClick={() => setPreview(createTournamentPreview(title, parsedParticipants.names, seeding, format, roundRobinTiebreaker, scoring, metadataByName, byePolicy, withdrawalPolicy, thirdPlaceMatch))}>{seeding === "random" ? "Shuffle and preview again" : "Refresh preview"}</button>
+            <button className="secondary-link" type="button" onClick={() => setPreview(createTournamentPreview(title, parsedParticipants.names, seeding, format, roundRobinTiebreaker, scoring, metadataByName, byePolicy, withdrawalPolicy, thirdPlaceMatch, bestOf))}>{seeding === "random" ? "Shuffle and preview again" : "Refresh preview"}</button>
           </div>
         </section>}
       </ShellCard>

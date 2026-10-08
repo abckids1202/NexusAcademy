@@ -122,6 +122,7 @@ function normalizeData(value: unknown): WheelForgeData {
             byePolicy: value.byePolicy ?? "automatic",
             withdrawalPolicy: value.withdrawalPolicy ?? "advance-opponent",
             thirdPlaceMatch: value.thirdPlaceMatch ?? false,
+            bestOf: value.bestOf ?? 1,
             scoring: value.scoring ?? { ...defaultRoundRobinScoring },
             events,
             nextEventSequence,
@@ -358,6 +359,8 @@ function isValidTournamentEvent(value: unknown): boolean {
     !hasOptionalString(value, "winnerId") || !hasOptionalString(value, "previousWinnerId") ||
     !hasOptionalString(value, "participantId") ||
     !hasOptionalString(value, "forfeitingParticipantId") || !hasOptionalString(value, "previousForfeitingParticipantId") ||
+    !hasOptionalString(value, "previousSeriesGameWinnerId") ||
+    (value.seriesGameNumber !== undefined && (typeof value.seriesGameNumber !== "number" || !Number.isInteger(value.seriesGameNumber) || value.seriesGameNumber < 1)) ||
     (value.resultMethod !== undefined && !isOneOf(value.resultMethod, ["played", "forfeit"] as const)) ||
     (value.previousResultMethod !== undefined && !isOneOf(value.previousResultMethod, ["played", "forfeit"] as const)) ||
     !hasValidOptionalScorePair(value, "scoreA", "scoreB") ||
@@ -383,7 +386,7 @@ function isValidTournamentEvent(value: unknown): boolean {
       (hasScorePair(value, "previousScoreA", "previousScoreB") && value.previousScoreA === value.previousScoreB);
     if (!validCurrent || !validPrevious) return false;
   }
-  if (value.type === "result-undone" && typeof value.previousWinnerId !== "string" && !hasScorePair(value, "previousScoreA", "previousScoreB")) return false;
+  if (value.type === "result-undone" && typeof value.previousWinnerId !== "string" && typeof value.previousSeriesGameWinnerId !== "string" && !hasScorePair(value, "previousScoreA", "previousScoreB")) return false;
   if (value.type === "bye-confirmed" && (typeof value.winnerId !== "string" || value.previousWinnerId !== undefined || value.resultMethod !== undefined || value.previousResultMethod !== undefined || value.conditionDraw !== undefined || value.winnerDraw !== undefined || value.invalidatedMatches !== undefined || hasScorePair(value, "scoreA", "scoreB"))) return false;
   const resultEvent = value.type === "result-recorded" || value.type === "result-corrected" || value.type === "result-undone";
   const currentForfeit = value.resultMethod === "forfeit";
@@ -426,6 +429,7 @@ function isValidTournament(value: unknown): boolean {
     (value.byePolicy !== undefined && !isOneOf(value.byePolicy, ["automatic", "manual"] as const)) ||
     (value.withdrawalPolicy !== undefined && !isOneOf(value.withdrawalPolicy, ["advance-opponent", "preserve-fixtures"] as const)) ||
     (value.thirdPlaceMatch !== undefined && typeof value.thirdPlaceMatch !== "boolean") ||
+    (value.bestOf !== undefined && (typeof value.bestOf !== "number" || ![1, 3, 5].includes(value.bestOf))) ||
     (value.scoring !== undefined && !isValidRoundRobinScoring(value.scoring)) ||
     !isOneOf(value.seeding, ["entry-order", "random", "manual"] as const) ||
     !isOneOf(value.status, ["in_progress", "completed"] as const) ||
@@ -471,6 +475,9 @@ function isValidTournament(value: unknown): boolean {
         !hasOptionalString(match, "participantAId") || !hasOptionalString(match, "participantBId") ||
         !hasOptionalString(match, "winnerId") || !hasOptionalString(match, "completedAt") ||
         !hasOptionalString(match, "forfeitingParticipantId") ||
+        (match.seriesWinsA !== undefined && (typeof match.seriesWinsA !== "number" || !Number.isInteger(match.seriesWinsA) || match.seriesWinsA < 0)) ||
+        (match.seriesWinsB !== undefined && (typeof match.seriesWinsB !== "number" || !Number.isInteger(match.seriesWinsB) || match.seriesWinsB < 0)) ||
+        (match.seriesGames !== undefined && (!Array.isArray(match.seriesGames) || !match.seriesGames.every((game) => isRecord(game) && typeof game.gameNumber === "number" && Number.isInteger(game.gameNumber) && game.gameNumber > 0 && typeof game.winnerId === "string" && isOneOf(game.resultMethod, ["played", "forfeit"] as const) && typeof game.completedAt === "string" && Number.isFinite(Date.parse(game.completedAt))))) ||
         (match.resultMethod !== undefined && !isOneOf(match.resultMethod, ["played", "forfeit"] as const)) ||
         !hasValidOptionalScorePair(match, "scoreA", "scoreB") ||
         (match.conditionDraw !== undefined && !isValidTournamentConditionDraw(match.conditionDraw))) return false;

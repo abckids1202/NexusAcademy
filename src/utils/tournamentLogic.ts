@@ -13,6 +13,7 @@ import type {
   TournamentByePolicy,
   TournamentWithdrawalPolicy,
   TournamentWinnerDraw,
+  TournamentBestOf,
 } from "../types";
 import { createId } from "./ids";
 import { randomInteger } from "./random";
@@ -26,6 +27,7 @@ type TournamentOptions = {
   byePolicy?: TournamentByePolicy;
   withdrawalPolicy?: TournamentWithdrawalPolicy;
   thirdPlaceMatch?: boolean;
+  bestOf?: TournamentBestOf;
   roundRobinTiebreaker?: RoundRobinTiebreaker;
   scoring?: RoundRobinScoring;
   createdAt?: string;
@@ -117,6 +119,7 @@ function createTournamentBase(
     byePolicy: prepared.options.byePolicy ?? "automatic",
     withdrawalPolicy: prepared.options.withdrawalPolicy ?? "advance-opponent",
     thirdPlaceMatch: prepared.options.thirdPlaceMatch ?? false,
+    bestOf: format === "single-elimination" ? prepared.options.bestOf ?? 1 : 1,
     status: "in_progress",
     participants: prepared.participants,
     rounds,
@@ -174,7 +177,7 @@ function createResultEvent(
   round: TournamentRound,
   match: TournamentRound["matches"][number],
   createdAt: string,
-  extra: Pick<TournamentEvent, "winnerId" | "previousWinnerId" | "invalidatedMatches" | "scoreA" | "scoreB" | "previousScoreA" | "previousScoreB" | "resultMethod" | "previousResultMethod" | "forfeitingParticipantId" | "previousForfeitingParticipantId"> = {},
+  extra: Pick<TournamentEvent, "winnerId" | "previousWinnerId" | "invalidatedMatches" | "scoreA" | "scoreB" | "previousScoreA" | "previousScoreB" | "resultMethod" | "previousResultMethod" | "forfeitingParticipantId" | "previousForfeitingParticipantId" | "seriesGameNumber" | "previousSeriesGameWinnerId"> = {},
 ): TournamentEventInput {
   return {
     type,
@@ -442,6 +445,7 @@ export function updateTournamentSetup(
   byePolicy: TournamentByePolicy = tournament.byePolicy ?? "automatic",
   withdrawalPolicy: TournamentWithdrawalPolicy = tournament.withdrawalPolicy ?? "advance-opponent",
   thirdPlaceMatch: boolean = tournament.thirdPlaceMatch ?? false,
+  bestOf: TournamentBestOf = tournament.bestOf ?? 1,
 ): Tournament {
   if (!canEditTournamentSetup(tournament)) {
     throw new Error("Tournament setup is locked after event activity has been recorded.");
@@ -484,6 +488,7 @@ export function updateTournamentSetup(
     byePolicy,
     withdrawalPolicy,
     thirdPlaceMatch,
+    bestOf,
     createdAt: tournament.createdAt,
   };
   const updated = format === "round-robin"
@@ -517,6 +522,24 @@ export function recordTournamentWinner(
     throw new Error("The winner must be one of the participants in this match.");
   }
 
+  const seriesBestOf = tournament.format === "single-elimination" ? tournament.bestOf ?? 1 : 1;
+  const seriesTarget = Math.ceil(seriesBestOf / 2);
+  const seriesGames = [...(match.seriesGames ?? [])];
+  if (seriesBestOf > 1) {
+    seriesGames.push({ gameNumber: seriesGames.length + 1, winnerId, resultMethod: "played", completedAt });
+    match.seriesGames = seriesGames;
+    match.seriesWinsA = seriesGames.filter((game) => game.winnerId === match.participantAId).length;
+    match.seriesWinsB = seriesGames.filter((game) => game.winnerId === match.participantBId).length;
+    match.resultSequence = tournament.nextResultSequence;
+    if (Math.max(match.seriesWinsA, match.seriesWinsB) < seriesTarget) {
+      const eventUpdate = appendTournamentEvent(tournament, createResultEvent(
+        "result-recorded", rounds[roundIndex], match, completedAt,
+        { winnerId, resultMethod: "played", seriesGameNumber: seriesGames.length },
+      ));
+      return { ...tournament, rounds, ...eventUpdate, nextResultSequence: tournament.nextResultSequence + 1, updatedAt: completedAt };
+    }
+  }
+
   match.status = "complete";
   match.winnerId = winnerId;
   match.resultMethod = "played";
@@ -527,7 +550,7 @@ export function recordTournamentWinner(
     rounds[roundIndex],
     match,
     completedAt,
-    { winnerId, resultMethod: "played" },
+    { winnerId, resultMethod: "played", ...(seriesBestOf > 1 ? { seriesGameNumber: seriesGames.length } : {}) },
   ));
 
   if (tournament.format === "round-robin") {
@@ -586,6 +609,22 @@ export function recordTournamentForfeit(
   }
 
   const winnerId = forfeitingParticipantId === match.participantAId ? match.participantBId : match.participantAId;
+  if ((tournament.bestOf ?? 1) > 1) {
+    if ((match.seriesGames?.length ?? 0) > 0) throw new Error("A series forfeit must be recorded before its first game.");
+    let recorded = tournament;
+    const target = Math.ceil((tournament.bestOf ?? 1) / 2);
+    for (let game = 0; game < target; game += 1) recorded = recordTournamentWinner(recorded, matchId, winnerId, completedAt);
+    const rounds = recorded.rounds.map((round) => ({
+      ...round,
+      matches: round.matches.map((item) => item.id === matchId
+        ? { ...item, seriesGames: item.seriesGames?.map((entry) => ({ ...entry, resultMethod: "forfeit" as const })), resultMethod: "forfeit" as const, forfeitingParticipantId }
+        : item),
+    }));
+    const events = recorded.events.map((event, index) => index === recorded.events.length - 1
+      ? { ...event, resultMethod: "forfeit" as const, forfeitingParticipantId }
+      : event);
+    return { ...recorded, rounds, events };
+  }
   const recorded = recordTournamentWinner(tournament, matchId, winnerId, completedAt);
   const rounds = recorded.rounds.map((round) => ({
     ...round,
@@ -996,6 +1035,24 @@ export function undoLastTournamentResult(
   const previousScoreB = match.scoreB;
   const previousResultMethod = match.resultMethod ?? "played";
   const previousForfeitingParticipantId = match.forfeitingParticipantId;
+  const previousSeriesGame = match.seriesGames?.at(-1);
+  if ((tournament.bestOf ?? 1) > 1 && previousSeriesGame) {
+    if (match.status === "complete" && match.winnerId) removeAdvancedWinner(rounds, latest.roundIndex, latest.matchIndex, match.winnerId);
+    match.seriesGames = match.seriesGames?.slice(0, -1) ?? [];
+    match.seriesWinsA = match.seriesGames.filter((game) => game.winnerId === match.participantAId).length;
+    match.seriesWinsB = match.seriesGames.filter((game) => game.winnerId === match.participantBId).length;
+    match.status = "pending";
+    delete match.winnerId;
+    delete match.completedAt;
+    delete match.resultMethod;
+    delete match.forfeitingParticipantId;
+    match.resultSequence = match.seriesGames.length ? latest.sequence - 1 : undefined;
+    const eventUpdate = appendTournamentEvent(tournament, createResultEvent(
+      "result-undone", rounds[latest.roundIndex], match, updatedAt,
+      { previousSeriesGameWinnerId: previousSeriesGame.winnerId, seriesGameNumber: previousSeriesGame.gameNumber },
+    ));
+    return { ...tournament, rounds, ...eventUpdate, status: "in_progress", nextResultSequence: latest.sequence, updatedAt, completedAt: undefined };
+  }
   if (tournament.format !== "round-robin" && match.winnerId) {
     removeAdvancedWinner(rounds, latest.roundIndex, latest.matchIndex, match.winnerId);
   }

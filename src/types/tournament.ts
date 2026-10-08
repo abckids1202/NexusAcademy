@@ -12,6 +12,7 @@ export type TournamentStatus = "in_progress" | "completed";
 export type TournamentMatchStatus = "pending" | "complete" | "bye";
 export type TournamentParticipantAttendance = "expected" | "checked-in" | "not-present";
 export type TournamentResultMethod = "played" | "forfeit";
+export type TournamentBestOf = 1 | 3 | 5;
 export type TournamentEventType = "result-recorded" | "result-corrected" | "result-undone" | "bye-confirmed" | "condition-drawn" | "winner-drawn" | "winner-draw-undone" | "participant-attendance-changed" | "participant-withdrawn";
 
 export type TournamentDrawEntrant = {
@@ -68,6 +69,8 @@ export type TournamentEvent = {
   previousResultMethod?: TournamentResultMethod;
   forfeitingParticipantId?: string;
   previousForfeitingParticipantId?: string;
+  seriesGameNumber?: number;
+  previousSeriesGameWinnerId?: string;
   participantId?: string;
   previousAttendanceStatus?: TournamentParticipantAttendance;
   attendanceStatus?: TournamentParticipantAttendance;
@@ -98,6 +101,14 @@ export type TournamentMatch = {
   scoreB?: number;
   resultMethod?: TournamentResultMethod;
   forfeitingParticipantId?: string;
+  seriesWinsA?: number;
+  seriesWinsB?: number;
+  seriesGames?: Array<{
+    gameNumber: number;
+    winnerId: string;
+    resultMethod: TournamentResultMethod;
+    completedAt: string;
+  }>;
 };
 
 export type TournamentRound = {
@@ -115,6 +126,7 @@ export type Tournament = {
   byePolicy: TournamentByePolicy;
   withdrawalPolicy: TournamentWithdrawalPolicy;
   thirdPlaceMatch: boolean;
+  bestOf: TournamentBestOf;
   status: TournamentStatus;
   participants: TournamentParticipant[];
   rounds: TournamentRound[];

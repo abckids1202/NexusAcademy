@@ -201,7 +201,7 @@ export function TournamentHostPage() {
         <div className="host-section-heading"><div><span className="host-eyebrow">Live match queue</span><h2>{match ? "Now playing" : "No match ready"}</h2></div>{hasUndoableTournamentResult(tournament) && <button className="host-undo-button" type="button" onClick={undoLatest}><RotateCcw size={16} /> Undo latest result</button>}</div>
 
         {match ? <article className="host-match-card" aria-label="Current match">
-          <div className="host-match-meta"><span>{getTournamentRoundLabel(active!.roundNumber, tournament.rounds.length, tournament.format)}</span><span>Match {match.matchNumber}</span><span>{queue.length} ready</span></div>
+          <div className="host-match-meta"><span>{getTournamentRoundLabel(active!.roundNumber, tournament.rounds.length, tournament.format)}</span><span>Match {match.matchNumber}{tournament.bestOf > 1 ? ` · Best of ${tournament.bestOf} · ${match.seriesWinsA ?? 0}-${match.seriesWinsB ?? 0}` : ""}</span><span>{queue.length} ready</span></div>
           <div className="host-contestants">
             <div><span>Participant A</span><strong>{participantA}</strong></div><span className="host-versus">VS</span><div><span>Participant B</span><strong>{participantB}</strong></div>
           </div>
@@ -221,7 +221,7 @@ export function TournamentHostPage() {
             <label><span>{participantB} score</span><input aria-label={`${participantB} score`} name="scoreB" type="number" min="0" max="1000000" step="1" required /></label>
             <button className="host-primary-action" type="submit">Record score</button>
           </form> : <div className="host-winner-actions">
-            <p>Record the match result</p>
+            <p>{tournament.bestOf > 1 ? `Record game ${((match.seriesGames?.length ?? 0) + 1)} of up to ${tournament.bestOf}` : "Record the match result"}</p>
             <button className="host-primary-action" type="button" onClick={() => recordWinner(match.participantAId!, participantA!)}>{participantA} wins</button>
             <button className="host-primary-action" type="button" onClick={() => recordWinner(match.participantBId!, participantB!)}>{participantB} wins</button>
           </div>}

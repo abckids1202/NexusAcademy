@@ -143,6 +143,45 @@ describe("match forfeits", () => {
   });
 });
 
+describe("best-of tournament series", () => {
+  it("keeps a series pending until the win target, then advances the winner", () => {
+    const initial = createSingleEliminationTournament("Series Cup", entrants(4), { bestOf: 3 });
+    const firstMatch = initial.rounds[0].matches[0];
+    const winnerId = firstMatch.participantAId!;
+    const afterGameOne = recordTournamentWinner(initial, firstMatch.id, winnerId, "2026-01-01T01:00:00.000Z");
+    expect(afterGameOne.rounds[0].matches[0]).toMatchObject({ status: "pending", seriesWinsA: 1, seriesWinsB: 0 });
+    expect(afterGameOne.rounds[1].matches[0].participantAId).toBeUndefined();
+
+    const afterGameTwo = recordTournamentWinner(afterGameOne, firstMatch.id, winnerId, "2026-01-01T02:00:00.000Z");
+    expect(afterGameTwo.rounds[0].matches[0]).toMatchObject({ status: "complete", winnerId, seriesWinsA: 2, seriesWinsB: 0 });
+    expect(afterGameTwo.rounds[0].matches[0].seriesGames).toHaveLength(2);
+    expect(afterGameTwo.rounds[1].matches[0].participantAId).toBe(winnerId);
+  });
+
+  it("undoes the latest series game without losing earlier games", () => {
+    const initial = createSingleEliminationTournament("Series Cup", entrants(4), { bestOf: 3 });
+    const match = initial.rounds[0].matches[0];
+    const firstWinner = match.participantAId!;
+    const secondWinner = match.participantBId!;
+    const afterOne = recordTournamentWinner(initial, match.id, firstWinner);
+    const afterTwo = recordTournamentWinner(afterOne, match.id, secondWinner);
+    const undone = undoLastTournamentResult(afterTwo);
+    expect(undone.rounds[0].matches[0]).toMatchObject({ status: "pending", seriesWinsA: 1, seriesWinsB: 0 });
+    expect(undone.rounds[0].matches[0].seriesGames).toHaveLength(1);
+    expect(undone.events.at(-1)).toMatchObject({ type: "result-undone", previousSeriesGameWinnerId: secondWinner, seriesGameNumber: 2 });
+  });
+
+  it("records a whole-series forfeit only before play begins", () => {
+    const initial = createSingleEliminationTournament("Series Cup", entrants(4), { bestOf: 3 });
+    const match = initial.rounds[0].matches[0];
+    const forfeitingId = match.participantAId!;
+    const winnerId = match.participantBId!;
+    const forfeited = recordTournamentForfeit(initial, match.id, forfeitingId);
+    expect(forfeited.rounds[0].matches[0]).toMatchObject({ status: "complete", winnerId, resultMethod: "forfeit", forfeitingParticipantId: forfeitingId, seriesWinsB: 2 });
+    expect(() => recordTournamentForfeit(recordTournamentWinner(initial, match.id, winnerId), match.id, forfeitingId)).toThrow("before its first game");
+  });
+});
+
 describe("tournament chance winner draws", () => {
   it("records a weighted no-replacement draw without changing match progression", () => {
     const initial = bracket(3);
