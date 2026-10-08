@@ -65,6 +65,32 @@ test("single-elimination preview can include and label a third-place match", asy
   await expect(page.locator(".tournament-match-title").filter({ hasText: "Third-place match" })).toBeVisible();
 });
 
+test("best-of series records games before advancing the bracket", async ({ page }) => {
+  await page.goto("/tournaments");
+  await page.getByLabel("Tournament name").fill("Series cup");
+  await page.getByLabel(/Participants/).fill("Avery\nJordan\nSam\nTaylor");
+  await page.getByLabel("Match series").selectOption("3");
+  await page.getByRole("button", { name: "Preview tournament" }).click();
+  await expect(page.getByRole("region", { name: "Tournament preview" })).toContainText("Best of 3");
+  await page.getByRole("button", { name: "Create this tournament" }).click();
+
+  const firstMatch = page.locator(".tournament-match").filter({ has: page.getByRole("button", { name: "Winner" }) }).first();
+  const firstMatchId = await firstMatch.getAttribute("data-match-id");
+  expect(firstMatchId).toBeTruthy();
+  await expect(firstMatch).toContainText("Best of 3");
+  const firstWinner = firstMatch.getByRole("button", { name: "Winner" }).first();
+  await firstWinner.click();
+  await expect(firstMatch).toContainText("1-0");
+  await expect(firstMatch).toContainText("Pending");
+  const nextMatch = page.locator(".tournament-match").filter({ hasText: "Waiting for previous winner" }).last();
+  await expect(nextMatch).toBeVisible();
+  const playedMatch = page.locator(`.tournament-match[data-match-id="${firstMatchId}"]`);
+  await playedMatch.getByRole("button", { name: "Winner" }).first().click();
+  await expect(playedMatch).toContainText("2-0");
+  await expect(playedMatch).toContainText("Complete");
+  await expect(nextMatch).toContainText("Avery");
+});
+
 test("chance-based tournament draw reviews ticket odds, stays out of match results, and records undo", async ({ page }) => {
   await createTournament(page, "Prize night", ["Avery", "Jordan", "Sam", "Taylor"], "single-elimination");
   await page.getByRole("button", { name: "Set up chance-based draw" }).click();
