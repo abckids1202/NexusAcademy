@@ -87,7 +87,7 @@ The near-term product goal should be **a complete, dependable local product**. A
 
 ### Not implemented
 
-- Tournament formats beyond single elimination and round robin: double elimination, Swiss, group stage, and free-for-all.
+- Tournament formats beyond the shipped single elimination, round robin, and double elimination: Swiss, group stage, and free-for-all.
 - Cross-tournament participant profiles/history and an independently verifiable or tamper-resistant audit record remain future work. Third-place matches, best-of-1/3/5 series, participant-wide withdrawal policy, configurable bye rules, tournament CSV, and print exports are implemented; the current event history remains local and editable through the backup file, so it must not be represented as certified evidence.
 - Live Supabase project configuration, verified end-to-end account/backup/deletion/recovery behavior, automatic sync, collaboration, shareable links, embed mode, and server-side random proofs.
 - Signed or independently verifiable random draws, immutable draw records, event lock/freeze, and publicly verifiable audit records.
@@ -238,7 +238,7 @@ For browser verification, Playwright's [web-server configuration](https://playwr
 
 On October 8, 2026, from the writable checkout at `C:\Users\charl\OneDrive\Desktop\WheelForge`:
 
-- Current evidence: lint, 133 unit tests, TypeScript/Vite production build, 51 Chromium journeys including malformed local-data recovery, attendance isolation, explicit forfeit and undo/correction, best-of series, dependent-result coverage, and axe scanning, plus 2 mocked-cloud password recovery journeys.
+- Current evidence: lint, 136 unit tests, TypeScript/Vite production build, 52 Chromium journeys including malformed local-data recovery, attendance isolation, explicit forfeit and undo/correction, best-of series, double-elimination reset/bye coverage, dependent-result coverage, and axe scanning, plus 2 mocked-cloud password recovery journeys. Firefox and WebKit have three smoke journeys each in the CI workflow.
 - `npm audit`: 0 dependency vulnerabilities.
 
 This verifies the local code quality gate only. It does not cover a production deployment, full accessibility conformance or manual screen-reader/browser testing, all browser journeys, backend security, or certified randomness.

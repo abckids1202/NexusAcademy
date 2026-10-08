@@ -49,4 +49,4 @@ WheelForge is suitable for a local beta release after a clean-clone check. It is
 
 ## Known product scope
 
-The current tournament engine supports single elimination, optional third-place matches, best-of-1/3/5 series, and round robin. Team-level match scoring and advanced team balancing, double elimination, Swiss, group stages, free-for-all, public sharing, collaboration, and independently verifiable randomness remain future milestones.
+The current tournament engine supports single elimination, optional third-place matches, best-of-1/3/5 series, round robin, and double elimination with winners/losers routing and a reset final. Team-level match scoring, Swiss, group stages, free-for-all, public sharing, collaboration, and independently verifiable randomness remain future milestones.

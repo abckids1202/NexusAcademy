@@ -140,7 +140,7 @@ Add one rules engine at a time, with written rules and reference fixtures.
 Continue tournament operations and template reuse in small releases, not another format immediately:
 
 1. Check-in, per-match forfeit behavior, participant-wide withdrawal policy, and configurable bye behavior are implemented and explicitly logged. Define pre-start scratch and how future formats affect remaining fixtures; retain the mobile queue/audience split and make every roster-state change explicit in tournament history.
-2. Define the pack schema and build multi-wheel/generator kits, including a tournament kit; then implement double elimination. Swiss comes only after its pairing rules are specified and tested as a standalone engine.
+2. Define the pack schema and build multi-wheel/generator kits, including a tournament kit; double elimination is now shipped and should receive broader event-policy coverage. Swiss comes only after its pairing rules are specified and tested as a standalone engine.
 3. Manually test print output, keyboard workflows, and screen-reader announcements; complete browser/device coverage before a public event rollout.
 
 ## Research Summary
@@ -154,6 +154,6 @@ Research checked September 22, 2026 against Wheel of Names' FAQ, Challonge's com
 
 ## Verification Record
 
-- Current release-gate evidence: lint, 133 unit tests, production build, 51 Chromium journeys, 2 mocked-cloud journeys, cross-browser smoke configuration, and zero high/critical dependency advisories. Automated checks do not replace live Supabase, deployment, monitoring, recovery-drill, or manual accessibility verification.
+- Current release-gate evidence: lint, 136 unit tests, production build, 52 Chromium journeys, 2 mocked-cloud journeys, cross-browser smoke configuration, and zero high/critical dependency advisories. Automated checks do not replace live Supabase, deployment, monitoring, recovery-drill, or manual accessibility verification.
 - `npm audit --audit-level=low`: zero vulnerabilities.
-- Not verified: live Supabase, real email delivery, deployed account-deletion function, two-account RLS isolation, production deployment/monitoring, manual screen-reader testing, or browser coverage beyond configured Chromium.
+- Not verified: live Supabase, real email delivery, deployed account-deletion function, two-account RLS isolation, production deployment/monitoring, manual screen-reader testing, and full feature coverage beyond the configured Chromium suite (Firefox/WebKit have smoke coverage in CI).
