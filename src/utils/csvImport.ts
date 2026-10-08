@@ -12,6 +12,11 @@ export type CsvParticipantPreview = {
   blankRows: number;
   duplicateCount: number;
 };
+export type ParticipantCsvInspection = {
+  headers: string[];
+  dataRows: string[][];
+  hasHeader: boolean;
+};
 
 export function parseCsvRows(input: string): string[][] {
   const source = input.replace(/^\uFEFF/, "");
@@ -65,6 +70,18 @@ function isHeaderRow(row: string[]): boolean {
     (!second || ["weight", "chance", "tickets"].includes(second));
 }
 
+function isParticipantHeaderRow(row: string[]): boolean {
+  const headings = new Set(["participant", "name", "player", "entrant", "email", "group", "team", "notes"]);
+  return row.some((value) => headings.has(value.trim().toLocaleLowerCase()));
+}
+
+export function inspectParticipantCsv(input: string): ParticipantCsvInspection {
+  const rows = parseCsvRows(input);
+  const hasHeader = rows.length > 0 && isParticipantHeaderRow(rows[0]);
+  const sourceHeaders = hasHeader ? rows[0] : rows[0]?.map((_, index) => `Column ${index + 1}`) ?? [];
+  return { headers: sourceHeaders.map((header, index) => header.trim() || `Column ${index + 1}`), dataRows: rows.slice(hasHeader ? 1 : 0), hasHeader };
+}
+
 export function parseWheelOptionCsv(input: string): CsvOptionPreview {
   const rows = parseCsvRows(input);
   const startsAt = rows.length > 0 && isHeaderRow(rows[0]) ? 1 : 0;
@@ -108,25 +125,23 @@ export function parseWheelOptionCsv(input: string): CsvOptionPreview {
   return { options, errors, blankRows, duplicateCount };
 }
 
-export function parseParticipantCsv(input: string): CsvParticipantPreview {
-  const rows = parseCsvRows(input);
-  const firstColumnHeading = rows[0]?.[0]?.trim().toLocaleLowerCase();
-  const startsAt = ["participant", "name", "player", "entrant"].includes(firstColumnHeading ?? "") ? 1 : 0;
+export function parseParticipantCsvColumn(input: string, columnIndex = 0): CsvParticipantPreview {
+  const inspection = inspectParticipantCsv(input);
   const names: string[] = [];
   const errors: CsvOptionError[] = [];
   const seen = new Set<string>();
   let blankRows = 0;
   let duplicateCount = 0;
 
-  rows.slice(startsAt).forEach((row, index) => {
-    const line = startsAt + index + 1;
-    const name = (row[0] ?? "").trim();
+  inspection.dataRows.forEach((row, index) => {
+    const line = (inspection.hasHeader ? 2 : 1) + index;
+    const name = (row[columnIndex] ?? "").trim();
     if (row.every((value) => value.trim().length === 0)) {
       blankRows += 1;
       return;
     }
     if (!name) {
-      errors.push({ line, message: "Add a participant name in the first column." });
+      errors.push({ line, message: columnIndex === 0 ? "Add a participant name in the first column." : "Add a participant name in the selected column." });
       return;
     }
 
@@ -140,4 +155,8 @@ export function parseParticipantCsv(input: string): CsvParticipantPreview {
   });
 
   return { names, errors, blankRows, duplicateCount };
+}
+
+export function parseParticipantCsv(input: string): CsvParticipantPreview {
+  return parseParticipantCsvColumn(input, 0);
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseCsvRows, parseParticipantCsv, parseWheelOptionCsv } from "./csvImport";
+import { parseCsvRows, parseParticipantCsv, parseParticipantCsvColumn, parseWheelOptionCsv } from "./csvImport";
 
 describe("CSV wheel-option import", () => {
   it("parses quoted commas, escaped quotes, multiline fields, and a UTF-8 BOM", () => {
@@ -41,6 +41,15 @@ describe("CSV wheel-option import", () => {
       errors: [{ line: 5, message: "Add a participant name in the first column." }],
       blankRows: 1,
       duplicateCount: 1,
+    });
+  });
+
+  it("imports participant names from an explicitly selected column", () => {
+    expect(parseParticipantCsvColumn("Email,Display name,Team\na@example.test,Avery Chen,Blue\nb@example.test,Jordan Lee,Gold", 1)).toEqual({
+      names: ["Avery Chen", "Jordan Lee"],
+      errors: [],
+      blankRows: 0,
+      duplicateCount: 0,
     });
   });
 });

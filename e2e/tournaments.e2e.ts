@@ -15,12 +15,28 @@ test("participant CSV preview offers append with first-column and duplicate rule
   const preview = page.getByRole("region", { name: "Participant CSV preview" });
   await expect(preview.getByText("2 unique participants")).toBeVisible();
   await expect(preview.getByText("1 duplicate names found in this file.")).toBeVisible();
-  await expect(preview.getByText("Only the first column is imported. Duplicate names are ignored without regard to capitalization.")).toBeVisible();
+  await expect(preview.getByText("Names are read from the selected column. Duplicate names are ignored without regard to capitalization.")).toBeVisible();
   await preview.getByRole("button", { name: "Append participants" }).click();
 
   await expect(participantField).toHaveValue("Avery\nJordan\nSam");
   await page.getByRole("button", { name: "Preview tournament" }).click();
   await expect(page.getByRole("region", { name: "Tournament preview" })).toContainText("3 participants");
+});
+
+test("participant CSV preview can map a name column", async ({ page }) => {
+  await page.goto("/tournaments");
+  await page.getByLabel("Tournament name").fill("Mapped roster cup");
+  await page.locator(".file-button input[type=file]").setInputFiles({
+    name: "participants.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from("Email,Display name,Team\na@example.test,Avery Chen,Blue\nb@example.test,Jordan Lee,Gold\n"),
+  });
+  const preview = page.getByRole("region", { name: "Participant CSV preview" });
+  await preview.getByLabel("Name column").selectOption({ label: "Display name" });
+  await expect(preview).toContainText("Avery Chen");
+  await expect(preview).toContainText("Jordan Lee");
+  await preview.getByRole("button", { name: "Replace participant list" }).click();
+  await expect(page.getByLabel(/Participants/)).toHaveValue("Avery Chen\nJordan Lee");
 });
 
 test("chance-based tournament draw reviews ticket odds, stays out of match results, and records undo", async ({ page }) => {

@@ -14,6 +14,7 @@
 - GitHub Actions runs lint, unit tests, audit, build, Chromium browser tests, cloud-mock tests, and uploads Playwright artifacts on failure.
 - Page routes are lazy-loaded; the main JavaScript chunk is approximately 351 kB minified instead of the previous 515 kB.
 - A shared local participant directory supports profile CRUD, archive/restore, search, backup persistence, and tournament roster reuse.
+- Tournament CSV imports detect common headers and support explicit participant-name column mapping, with legacy first-column files still supported.
 
 ## Release decision
 
@@ -31,4 +32,4 @@ WheelForge is suitable for a local beta release after a clean-clone check. It is
 
 ## Known product scope
 
-The current tournament engine supports single elimination and round robin. Roster column mapping, teams, participant-wide withdrawal, configurable byes, manual seed editing, double elimination, Swiss, group stages, free-for-all, best-of-N, third-place matches, public sharing, collaboration, and independently verifiable randomness remain future milestones.
+The current tournament engine supports single elimination and round robin. Teams, participant-wide withdrawal, configurable byes, manual seed editing, double elimination, Swiss, group stages, free-for-all, best-of-N, third-place matches, public sharing, collaboration, and independently verifiable randomness remain future milestones.

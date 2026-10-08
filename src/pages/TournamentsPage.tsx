@@ -8,7 +8,7 @@ import { useTournaments } from "../hooks/useTournaments";
 import type { RoundRobinScoring, RoundRobinTiebreaker, Tournament, TournamentFormat, TournamentMatch, TournamentSeeding } from "../types";
 import { MAX_ROUND_ROBIN_PARTICIPANTS, MAX_TOURNAMENT_PARTICIPANTS, getTournamentProgress, getTournamentRoundLabel, isValidRoundRobinScoring } from "../utils/tournamentLogic";
 import { parseParticipantNames } from "../utils/participantImport";
-import { parseParticipantCsv, type CsvParticipantPreview } from "../utils/csvImport";
+import { inspectParticipantCsv, parseParticipantCsvColumn, type CsvParticipantPreview, type ParticipantCsvInspection } from "../utils/csvImport";
 import { defaultRoundRobinScoring } from "../data/tournamentDefaults";
 import { useParticipants } from "../hooks/useParticipants";
 
@@ -46,6 +46,8 @@ export function TournamentsPage() {
   const directoryParticipants = useParticipants(false);
   const [preview, setPreview] = useState<Tournament | null>(null);
   const [participantCsvPreview, setParticipantCsvPreview] = useState<CsvParticipantPreview | null>(null);
+  const [participantCsvSource, setParticipantCsvSource] = useState<{ input: string; inspection: ParticipantCsvInspection } | null>(null);
+  const [participantNameColumn, setParticipantNameColumn] = useState(0);
   const [error, setError] = useState("");
   const parsedParticipants = useMemo(() => parseParticipantNames(participantText), [participantText]);
   const participantLimit = format === "round-robin" ? MAX_ROUND_ROBIN_PARTICIPANTS : MAX_TOURNAMENT_PARTICIPANTS;
@@ -61,12 +63,22 @@ export function TournamentsPage() {
   async function previewParticipantsCsv(file?: File) {
     if (!file) return;
     try {
-      setParticipantCsvPreview(parseParticipantCsv(await file.text()));
+      const input = await file.text();
+      const inspection = inspectParticipantCsv(input);
+      setParticipantCsvSource({ input, inspection });
+      setParticipantNameColumn(0);
+      setParticipantCsvPreview(parseParticipantCsvColumn(input, 0));
       setError("");
     } catch (reason) {
       setParticipantCsvPreview(null);
+      setParticipantCsvSource(null);
       setError(reason instanceof Error ? reason.message : "Could not read this CSV file.");
     }
+  }
+
+  function changeParticipantNameColumn(value: number) {
+    setParticipantNameColumn(value);
+    if (participantCsvSource) setParticipantCsvPreview(parseParticipantCsvColumn(participantCsvSource.input, value));
   }
 
   function applyParticipantsCsv(mode: "replace" | "append") {
@@ -141,7 +153,8 @@ export function TournamentsPage() {
           <label className="secondary-link file-button"><Upload size={16} /> Preview participant CSV<input type="file" accept=".csv,text/csv" onChange={(event) => { void previewParticipantsCsv(event.target.files?.[0]); event.currentTarget.value = ""; }} /></label>
           {participantCsvPreview && <section className="csv-option-preview" aria-label="Participant CSV preview">
             <p><strong>{participantCsvPreview.names.length} unique participants</strong>{participantCsvPreview.errors.length > 0 ? ` · ${participantCsvPreview.errors.length} rows need attention` : ""}{participantCsvPreview.blankRows > 0 ? ` · ${participantCsvPreview.blankRows} blank rows skipped` : ""}</p>
-            <p className="muted">Only the first column is imported. Duplicate names are ignored without regard to capitalization.</p>
+            {participantCsvSource && participantCsvSource.inspection.headers.length > 1 && <label className="field-stack"><span>Name column</span><select className="select-field" value={participantNameColumn} onChange={(event) => changeParticipantNameColumn(Number(event.target.value))}>{participantCsvSource.inspection.headers.map((header, index) => <option key={`${index}-${header}`} value={index}>{header}</option>)}</select></label>}
+            <p className="muted">Names are read from the selected column. Duplicate names are ignored without regard to capitalization.</p>
             {participantCsvPreview.duplicateCount > 0 && <p className="muted">{participantCsvPreview.duplicateCount} duplicate names found in this file.</p>}
             <ul>{participantCsvPreview.names.slice(0, 6).map((name, index) => <li key={`${index}-${name}`}>{name}</li>)}</ul>
             {participantCsvPreview.names.length > 6 && <p className="muted">And {participantCsvPreview.names.length - 6} more participants.</p>}
@@ -150,7 +163,7 @@ export function TournamentsPage() {
             <div className="hero-actions">
               <button className="primary-link" type="button" disabled={participantCsvPreview.names.length === 0} onClick={() => applyParticipantsCsv("append")}>Append participants</button>
               <button className="secondary-link" type="button" disabled={participantCsvPreview.names.length === 0} onClick={() => applyParticipantsCsv("replace")}>Replace participant list</button>
-              <button className="secondary-link" type="button" onClick={() => setParticipantCsvPreview(null)}>Cancel import</button>
+              <button className="secondary-link" type="button" onClick={() => { setParticipantCsvPreview(null); setParticipantCsvSource(null); }}>Cancel import</button>
             </div>
           </section>}
           <label className="field-stack">
