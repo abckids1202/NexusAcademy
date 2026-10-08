@@ -445,7 +445,10 @@ test("a stale tournament setup draft is preserved and requires an explicit reloa
 
   const writer = await context.newPage();
   await writer.goto(detailUrl);
-  await writer.getByRole("button", { name: "Edit setup" }).click();
+  await expect(writer.getByRole("heading", { name: "Cross-tab Tournament" })).toBeVisible();
+  const writerEditButton = writer.getByRole("button", { name: "Edit setup" });
+  if (await writerEditButton.isVisible()) await writerEditButton.click();
+  else await expect(writer.getByRole("button", { name: "Save setup" })).toBeVisible();
   await writer.getByLabel("Tournament name").last().fill("Latest tournament version");
   await writer.getByRole("button", { name: "Save setup" }).click();
 

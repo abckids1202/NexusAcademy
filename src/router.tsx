@@ -1,34 +1,86 @@
 import { createBrowserRouter } from "react-router-dom";
 import { App } from "./App";
-import { ChainBuilderPage } from "./pages/ChainBuilderPage";
-import { ChainRunnerPage } from "./pages/ChainRunnerPage";
-import { DashboardPage } from "./pages/DashboardPage";
-import { HomePage } from "./pages/HomePage";
+import { RouteLoading } from "./components/common/RouteLoading";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { RouterErrorPage } from "./pages/RouterErrorPage";
-import { SettingsPage } from "./pages/SettingsPage";
-import { SpinPage } from "./pages/SpinPage";
-import { TemplatesPage } from "./pages/TemplatesPage";
-import { TournamentDetailPage } from "./pages/TournamentDetailPage";
-import { TournamentsPage } from "./pages/TournamentsPage";
-import { WheelEditorPage } from "./pages/WheelEditorPage";
 
 export const router = createBrowserRouter([
   {
     path: "/",
     element: <App />,
     errorElement: <RouterErrorPage />,
+    HydrateFallback: RouteLoading,
     children: [
-      { index: true, element: <HomePage /> },
-      { path: "dashboard", element: <DashboardPage /> },
-      { path: "wheels/new", element: <WheelEditorPage mode="create" /> },
-      { path: "wheels/:wheelId/edit", element: <WheelEditorPage mode="edit" /> },
-      { path: "spin/:wheelId?", element: <SpinPage /> },
-      { path: "chains/new", element: <ChainBuilderPage mode="create" /> },
-      { path: "chains/:chainId/edit", element: <ChainBuilderPage mode="edit" /> },
-      { path: "chains/:chainId/run", element: <ChainRunnerPage /> },
-      { path: "tournaments", element: <TournamentsPage /> },
-      { path: "tournaments/:tournamentId", element: <TournamentDetailPage /> },
+      {
+        index: true,
+        lazy: async () => {
+          const { HomePage } = await import("./pages/HomePage");
+          return { Component: HomePage };
+        },
+      },
+      {
+        path: "dashboard",
+        lazy: async () => {
+          const { DashboardPage } = await import("./pages/DashboardPage");
+          return { Component: DashboardPage };
+        },
+      },
+      {
+        path: "wheels/new",
+        lazy: async () => {
+          const { WheelEditorPage } = await import("./pages/WheelEditorPage");
+          return { Component: () => <WheelEditorPage mode="create" /> };
+        },
+      },
+      {
+        path: "wheels/:wheelId/edit",
+        lazy: async () => {
+          const { WheelEditorPage } = await import("./pages/WheelEditorPage");
+          return { Component: () => <WheelEditorPage mode="edit" /> };
+        },
+      },
+      {
+        path: "spin/:wheelId?",
+        lazy: async () => {
+          const { SpinPage } = await import("./pages/SpinPage");
+          return { Component: SpinPage };
+        },
+      },
+      {
+        path: "chains/new",
+        lazy: async () => {
+          const { ChainBuilderPage } = await import("./pages/ChainBuilderPage");
+          return { Component: () => <ChainBuilderPage mode="create" /> };
+        },
+      },
+      {
+        path: "chains/:chainId/edit",
+        lazy: async () => {
+          const { ChainBuilderPage } = await import("./pages/ChainBuilderPage");
+          return { Component: () => <ChainBuilderPage mode="edit" /> };
+        },
+      },
+      {
+        path: "chains/:chainId/run",
+        lazy: async () => {
+          const { ChainRunnerPage } = await import("./pages/ChainRunnerPage");
+          return { Component: ChainRunnerPage };
+        },
+      },
+      {
+        path: "tournaments",
+        lazy: async () => {
+          const { TournamentsPage } = await import("./pages/TournamentsPage");
+          return { Component: TournamentsPage };
+        },
+      },
+      {
+        path: "tournaments/:tournamentId",
+        lazy: async () => {
+          const { TournamentDetailPage } = await import("./pages/TournamentDetailPage");
+          return { Component: TournamentDetailPage };
+        },
+      },
       {
         path: "tournaments/:tournamentId/host",
         lazy: async () => {
@@ -36,8 +88,20 @@ export const router = createBrowserRouter([
           return { Component: TournamentHostPage };
         },
       },
-      { path: "templates", element: <TemplatesPage /> },
-      { path: "settings", element: <SettingsPage /> },
+      {
+        path: "templates",
+        lazy: async () => {
+          const { TemplatesPage } = await import("./pages/TemplatesPage");
+          return { Component: TemplatesPage };
+        },
+      },
+      {
+        path: "settings",
+        lazy: async () => {
+          const { SettingsPage } = await import("./pages/SettingsPage");
+          return { Component: SettingsPage };
+        },
+      },
       { path: "*", element: <NotFoundPage /> },
     ],
   },

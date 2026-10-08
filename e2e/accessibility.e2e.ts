@@ -28,6 +28,7 @@ test("main workflows have no automatically detectable WCAG A/AA violations", asy
 
   await page.goto("/");
   const skipLink = page.getByRole("link", { name: "Skip to main content" });
+  await expect(skipLink).toBeVisible();
   await page.keyboard.press("Tab");
   await expect(skipLink).toBeFocused();
   await page.keyboard.press("Enter");
