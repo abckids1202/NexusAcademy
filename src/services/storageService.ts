@@ -472,7 +472,7 @@ function isValidTournament(value: unknown): boolean {
     Array.isArray(round.matches) && round.matches.every((match) => {
       if (!isRecord(match) || typeof match.id !== "string" ||
         typeof match.matchNumber !== "number" || !Number.isInteger(match.matchNumber) ||
-        !isOneOf(match.status, ["pending", "complete", "bye", "locked"] as const) ||
+        !isOneOf(match.status, ["pending", "complete", "bye", "locked", "void"] as const) ||
         !hasOptionalString(match, "participantAId") || !hasOptionalString(match, "participantBId") ||
         !hasOptionalString(match, "winnerId") || !hasOptionalString(match, "completedAt") ||
         !hasOptionalString(match, "forfeitingParticipantId") ||
@@ -503,6 +503,7 @@ function isValidTournament(value: unknown): boolean {
         match.status === "pending" ? !hasWinner && !hasScores && match.resultMethod === undefined && match.forfeitingParticipantId === undefined
           : match.status === "bye" ? hasWinner && !hasScores && match.resultMethod === undefined && match.forfeitingParticipantId === undefined && participants.length === 1 && participants[0] === match.winnerId
             : match.status === "locked" ? match.isGrandFinalReset === true && participants.length === 0 && !hasWinner && !hasScores && match.resultMethod === undefined && match.forfeitingParticipantId === undefined
+            : match.status === "void" ? participants.length === 0 && !hasWinner && !hasScores && match.resultMethod === undefined && match.forfeitingParticipantId === undefined
             : validForfeit && participants.length === 2 && (hasWinner
               ? participants.includes(match.winnerId as string) && (!hasScores ||
                 (match.winnerId === match.participantAId ? Number(match.scoreA) > Number(match.scoreB) : Number(match.scoreB) > Number(match.scoreA)))

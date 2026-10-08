@@ -400,6 +400,31 @@ function routeDoubleBracketParticipant(
   if (nextMatchId && nextSlot) setDoubleBracketSlot(rounds, nextMatchId, nextSlot, participantId);
 }
 
+function resolveDoubleAutomaticByes(rounds: TournamentRound[], byePolicy: TournamentByePolicy): void {
+  if (byePolicy !== "automatic") return;
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const match of rounds.flatMap((round) => round.matches)) {
+      if (match.status !== "pending") continue;
+      const participants = [match.participantAId, match.participantBId].filter((id): id is string => Boolean(id));
+      if (participants.length > 1) continue;
+      const incoming = rounds.flatMap((round) => round.matches).filter((source) =>
+        source.winnerNextMatchId === match.id || source.loserNextMatchId === match.id,
+      );
+      if (incoming.length === 0 || incoming.some((source) => source.status === "pending")) continue;
+      if (participants.length === 0) {
+        match.status = "void";
+      } else {
+        match.status = "bye";
+        match.winnerId = participants[0];
+        routeDoubleBracketParticipant(rounds, match, participants[0], "winner");
+      }
+      changed = true;
+    }
+  }
+}
+
 export function createDoubleEliminationTournament(
   title: string,
   entrants: Array<Pick<TournamentParticipant, "id" | "name">>,
@@ -502,6 +527,7 @@ export function createDoubleEliminationTournament(
     match.winnerId = participantIds[0];
     routeDoubleBracketParticipant(rounds, match, participantIds[0], "winner");
   }
+  resolveDoubleAutomaticByes(rounds, prepared.options.byePolicy ?? "automatic");
 
   return {
     ...createTournamentBase(prepared, "double-elimination", rounds),
@@ -740,6 +766,7 @@ export function recordTournamentWinner(
       routeDoubleBracketParticipant(rounds, match, winnerId, "winner");
       if (loserId) routeDoubleBracketParticipant(rounds, match, loserId, "loser");
     }
+    resolveDoubleAutomaticByes(rounds, tournament.byePolicy);
     const isComplete = isDoubleEliminationComplete(rounds, tournament);
     return {
       ...tournament,
@@ -842,7 +869,10 @@ export function recordTournamentBye(
   match.winnerId = winnerId;
   match.completedAt = completedAt;
   match.resultSequence = tournament.nextResultSequence;
-  if (tournament.format === "double-elimination") routeDoubleBracketParticipant(rounds, match, winnerId, "winner");
+  if (tournament.format === "double-elimination") {
+    routeDoubleBracketParticipant(rounds, match, winnerId, "winner");
+    resolveDoubleAutomaticByes(rounds, tournament.byePolicy);
+  }
   else if (tournament.format !== "round-robin") advanceByeWinner(rounds, roundIndex, matchIndex, winnerId);
   const eventUpdate = appendTournamentEvent(tournament, createResultEvent("bye-confirmed", rounds[roundIndex], match, completedAt, { winnerId }));
   const isComplete = tournament.format === "double-elimination"
@@ -880,7 +910,10 @@ export function withdrawTournamentParticipant(
       if (match.participantAId === participantId) delete match.participantAId;
       if (match.participantBId === participantId) delete match.participantBId;
       match.completedAt = withdrawnAt;
-      if (tournament.format === "double-elimination") routeDoubleBracketParticipant(rounds, match, opponentId, "winner");
+      if (tournament.format === "double-elimination") {
+        routeDoubleBracketParticipant(rounds, match, opponentId, "winner");
+        resolveDoubleAutomaticByes(rounds, tournament.byePolicy);
+      }
       else if (tournament.format !== "round-robin") advanceByeWinner(rounds, roundIndex, matchIndex, opponentId);
     }));
   }
@@ -1435,7 +1468,7 @@ export function getTournamentProgress(tournament: Tournament): { played: number;
   const champion = tournament.status === "completed"
     ? tournament.participants.find((participant) => participant.id === (resetMatch?.status === "complete" ? resetMatch.winnerId : finalMatch?.winnerId))?.name
     : undefined;
-  const total = tournament.rounds.flatMap((round) => round.matches).filter((match) => match.status !== "bye" && match.status !== "locked").length;
+  const total = tournament.rounds.flatMap((round) => round.matches).filter((match) => match.status !== "bye" && match.status !== "locked" && match.status !== "void").length;
   return { played, total, champion };
 }
 

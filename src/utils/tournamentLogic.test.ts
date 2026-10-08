@@ -98,6 +98,23 @@ describe("double-elimination brackets", () => {
     expect(current.status).toBe("completed");
     expect(getTournamentProgress(current).champion).toBe("Player 4");
   });
+
+  it("cascades automatic byes for a non-power-of-two roster", () => {
+    let current = createDoubleEliminationTournament("Five Player Cup", entrants(5), {
+      id: "double-five",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      idFactory: (() => { let id = 0; return (prefix: string) => `${prefix}-${++id}`; })(),
+    });
+    for (let step = 0; step < 40 && current.status !== "completed"; step += 1) {
+      const readyMatch = current.rounds.flatMap((round) => round.matches).find((match) =>
+        match.status === "pending" && match.participantAId && match.participantBId,
+      );
+      if (!readyMatch) break;
+      current = recordTournamentWinner(current, readyMatch.id, readyMatch.participantAId!, `2026-01-01T00:${String(step + 1).padStart(2, "0")}:00.000Z`);
+    }
+    expect(current.status).toBe("completed");
+    expect(getTournamentProgress(current).champion).toBeTruthy();
+  });
 });
 
 describe("tournament participant attendance", () => {

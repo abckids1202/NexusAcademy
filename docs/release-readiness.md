@@ -5,7 +5,7 @@
 ## Verified in the current checkout
 
 - `npm run lint` passes.
-- `npm test -- --run` passes with 135 tests across 11 source test files.
+- `npm test -- --run` passes with 136 tests across 11 source test files.
 - `npm run audit` passes with no high or critical advisories.
 - `npm run build` passes.
 - `npm run test:e2e` passes with 52 Chromium journeys.

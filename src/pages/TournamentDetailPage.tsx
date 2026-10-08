@@ -479,7 +479,7 @@ export function TournamentDetailPage() {
         {tournament.rounds.map((round) => <section className="tournament-round" key={round.roundNumber} aria-label={round.label ?? getTournamentRoundLabel(round.roundNumber, tournament.rounds.length, tournament.format)}>
           <header className="tournament-round-heading">
             <h2>{round.label ?? getTournamentRoundLabel(round.roundNumber, tournament.rounds.length, tournament.format)}</h2>
-            <span>{round.matches.filter((match) => match.status === "complete").length}/{round.matches.filter((match) => match.status !== "bye" && match.status !== "locked").length}</span>
+            <span>{round.matches.filter((match) => match.status === "complete").length}/{round.matches.filter((match) => match.status !== "bye" && match.status !== "locked" && match.status !== "void").length}</span>
           </header>
           <div className="tournament-match-list">
             {round.matches.map((match) => {
@@ -493,9 +493,9 @@ export function TournamentDetailPage() {
                 b: hasScore ? String(match.scoreB) : "",
               };
               return <article className={`tournament-match ${match.status === "complete" ? "is-complete" : ""}`} data-match-id={match.id} key={match.id}>
-                <div className="tournament-match-title"><strong>{match.isGrandFinalReset ? "Grand-final reset" : match.matchNumber === 2 && tournament.thirdPlaceMatch && round.roundNumber === tournament.rounds.at(-1)?.roundNumber ? "Third-place match" : `Match ${match.matchNumber}`}</strong>{tournament.bestOf > 1 && <span>Best of {tournament.bestOf} · {match.seriesWinsA ?? 0}-{match.seriesWinsB ?? 0}</span>}{match.status === "bye" ? <span>Bye</span> : match.status === "locked" ? <span>Locked</span> : match.status === "complete" ? <span>Complete</span> : <span>Pending</span>}</div>
+                <div className="tournament-match-title"><strong>{match.isGrandFinalReset ? "Grand-final reset" : match.matchNumber === 2 && tournament.thirdPlaceMatch && round.roundNumber === tournament.rounds.at(-1)?.roundNumber ? "Third-place match" : `Match ${match.matchNumber}`}</strong>{tournament.bestOf > 1 && <span>Best of {tournament.bestOf} · {match.seriesWinsA ?? 0}-{match.seriesWinsB ?? 0}</span>}{match.status === "bye" ? <span>Bye</span> : match.status === "void" ? <span>Skipped</span> : match.status === "locked" ? <span>Locked</span> : match.status === "complete" ? <span>Complete</span> : <span>Pending</span>}</div>
                 {match.status === "bye" && winner ? <div className="tournament-bye"><span className="seed-label">Seed {winner.seed}</span><strong>{winner.name}</strong>{(winner.group || winner.role || winner.seat) && <small className="muted">{[winner.group, winner.role, winner.seat ? `Seat ${winner.seat}` : ""].filter(Boolean).join(" · ")}</small>}<span className="muted">{tournament.format === "round-robin" ? "Bye · no match played" : "Bye · advances"}</span></div> : <>
-                  {match.status === "locked" ? <p className="muted">The reset final activates only if the losers-bracket champion wins the first grand final.</p> : <>{[participantA, participantB].map((participant, side) => participant ? <div className={`tournament-entrant ${winner?.id === participant.id ? "is-winner" : ""}`} key={participant.id}>
+                  {match.status === "void" ? <p className="muted">No fixture was required after automatic byes.</p> : match.status === "locked" ? <p className="muted">The reset final activates only if the losers-bracket champion wins the first grand final.</p> : <>{[participantA, participantB].map((participant, side) => participant ? <div className={`tournament-entrant ${winner?.id === participant.id ? "is-winner" : ""}`} key={participant.id}>
                     <span className="seed-label">{participant.seed}</span>
                     <strong>{participant.name}</strong>
                     {(participant.group || participant.role || participant.seat) && <small className="muted">{[participant.group, participant.role, participant.seat ? `Seat ${participant.seat}` : ""].filter(Boolean).join(" · ")}</small>}

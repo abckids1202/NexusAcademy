@@ -9,7 +9,7 @@ export type RoundRobinScoring = {
   lossPoints: number;
 };
 export type TournamentStatus = "in_progress" | "completed";
-export type TournamentMatchStatus = "pending" | "complete" | "bye" | "locked";
+export type TournamentMatchStatus = "pending" | "complete" | "bye" | "locked" | "void";
 export type TournamentBracket = "winners" | "losers" | "grand-final";
 export type TournamentMatchSlot = "A" | "B";
 export type TournamentParticipantAttendance = "expected" | "checked-in" | "not-present";
