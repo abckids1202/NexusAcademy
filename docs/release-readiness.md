@@ -5,10 +5,10 @@
 ## Verified in the current checkout
 
 - `npm run lint` passes.
-- `npm test -- --run` passes with 133 tests across 11 source test files.
+- `npm test -- --run` passes with 135 tests across 11 source test files.
 - `npm run audit` passes with no high or critical advisories.
 - `npm run build` passes.
-- `npm run test:e2e` passes with 51 Chromium journeys.
+- `npm run test:e2e` passes with 52 Chromium journeys.
 - `npm run test:e2e:cloud` passes with 2 mocked cloud journeys.
 - `npm run test:e2e:cross-browser` provides 3 Firefox and 3 WebKit smoke journeys in CI for routing, the shell, templates, and tournament setup; full feature coverage remains Chromium-based.
 - Local Windows verification currently passes WebKit smoke tests; Playwright Firefox cannot launch in this environment (`spawn UNKNOWN`), so Firefox evidence must come from the Ubuntu CI runner or a manual Firefox session.
@@ -27,6 +27,7 @@
 - Tournament CSV imports detect common headers and support explicit participant-name column mapping, with legacy first-column files still supported.
 - Single-elimination setup can add a third-place match; semifinal winners route to the championship and semifinal losers route to the placement match, with correction and undo support.
 - Single-elimination setup supports best-of-1, best-of-3, and best-of-5 series. Each game is recorded independently, series scores remain pending until the win target is reached, whole-series forfeits are supported before play, and the latest game can be undone.
+- Double-elimination setup supports up to 64 participants with explicit winners/losers routing, automatic byes, best-of-1/3/5 series, a reset grand final, and a locked reset fixture. Its creation and full reset-final lifecycle have unit and browser coverage; dependent corrections currently require undoing back to the affected match.
 - Local persistence classifies quota exhaustion separately from generic write failures and surfaces recovery guidance to export a backup and clear unused data.
 - Cloud backup writes re-read the current revision and use an `updated_at` compare-and-swap for existing records, rejecting stale browser uploads instead of silently overwriting a newer backup.
 - A repeatable `npm run verify:supabase:staging` script exercises two temporary authenticated users against a configured staging project, verifies own-row CRUD and cross-account read/update/delete isolation, and cleans up the test users with the service role.
