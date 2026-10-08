@@ -1,4 +1,4 @@
-export type TournamentSeeding = "entry-order" | "random";
+export type TournamentSeeding = "entry-order" | "random" | "manual";
 export type TournamentFormat = "single-elimination" | "round-robin";
 export type RoundRobinTiebreaker = "seed" | "head-to-head";
 export type RoundRobinScoring = {

@@ -45,7 +45,7 @@ export type ChainTemplate = {
 
 export type TournamentPreset = {
   format: "single-elimination" | "round-robin";
-  seeding: "entry-order" | "random";
+  seeding: "entry-order" | "random" | "manual";
   roundRobinTiebreaker?: "seed" | "head-to-head";
   scoring?: { winPoints: number; drawPoints: number; lossPoints: number };
 };

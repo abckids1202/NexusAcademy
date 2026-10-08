@@ -52,7 +52,16 @@ export function createTournamentPreview(
   scoring: RoundRobinScoring = defaultRoundRobinScoring,
   metadataByName: Record<string, TournamentRosterMetadata> = {},
 ): Tournament {
-  const entrants = names.map((name) => ({ id: createId("participant"), name, ...(metadataByName[name.toLocaleLowerCase()] ?? {}) }));
+  if (seeding === "manual") {
+    const seats = names.map((name) => metadataByName[name.toLocaleLowerCase()]?.seat);
+    if (seats.some((seat) => seat === undefined || !Number.isInteger(seat) || seat < 1) || new Set(seats).size !== names.length) {
+      throw new Error("Manual seeding requires a unique positive seat number for every participant.");
+    }
+  }
+  const orderedNames = seeding === "manual"
+    ? [...names].sort((first, second) => (metadataByName[first.toLocaleLowerCase()]?.seat ?? 0) - (metadataByName[second.toLocaleLowerCase()]?.seat ?? 0))
+    : names;
+  const entrants = orderedNames.map((name) => ({ id: createId("participant"), name, ...(metadataByName[name.toLocaleLowerCase()] ?? {}) }));
   const tournament = format === "round-robin"
     ? createRoundRobinTournament(title, entrants, { seeding, roundRobinTiebreaker, scoring })
     : createSingleEliminationTournament(title, entrants, { seeding });

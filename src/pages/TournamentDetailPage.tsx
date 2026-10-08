@@ -407,6 +407,7 @@ export function TournamentDetailPage() {
           <select className="select-field" value={setupSeeding} onChange={(event) => setSetupSeeding(event.target.value as Tournament["seeding"])}>
             <option value="entry-order">Use entry order</option>
             <option value="random">Shuffle participants</option>
+            <option value="manual">Use saved seat numbers</option>
           </select>
         </label>
         <label className="field-stack">

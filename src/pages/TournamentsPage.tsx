@@ -76,6 +76,10 @@ export function TournamentsPage() {
       }];
     }),
   ), [directoryMetadataByName, parsedParticipants.names, rosterMetadata]);
+  const manualSeedValid = seeding !== "manual" || (() => {
+    const seats = parsedParticipants.names.map((name) => metadataByName[name.toLocaleLowerCase()]?.seat);
+    return seats.length >= 2 && seats.every((seat) => seat !== undefined && Number.isInteger(seat) && seat > 0) && new Set(seats).size === seats.length;
+  })();
 
   async function previewParticipantsCsv(file?: File) {
     if (!file) return;
@@ -223,12 +227,14 @@ export function TournamentsPage() {
             </select>
           </label>
           <label className="field-stack">
-            <span>Entry order</span>
+            <span>Seeding</span>
             <select className="select-field" value={seeding} onChange={(event) => { invalidatePreview(); setSeeding(event.target.value as TournamentSeeding); }}>
               <option value="entry-order">Use entry order</option>
               <option value="random">Shuffle participants</option>
+              <option value="manual">Use manual seat numbers</option>
             </select>
           </label>
+          {seeding === "manual" && !manualSeedValid && <p className="validation-message" role="alert">Assign a unique positive seat number to every participant before previewing manual seeds.</p>}
           {format === "round-robin" && <label className="field-stack">
             <span>Standings tiebreaker</span>
             <select className="select-field" value={roundRobinTiebreaker} onChange={(event) => { invalidatePreview(); setRoundRobinTiebreaker(event.target.value as RoundRobinTiebreaker); }}>
@@ -248,14 +254,14 @@ export function TournamentsPage() {
           {parsedParticipants.names.length > participantLimit && <p className="validation-message" role="alert">{format === "round-robin" ? "Round robin supports up to 32 participants." : `This format supports up to ${MAX_TOURNAMENT_PARTICIPANTS} participants.`}</p>}
           {parsedParticipants.duplicateCount > 0 && <p className="muted" role="status">Repeated names are ignored ({parsedParticipants.duplicateCount}).</p>}
           {error && <p className="validation-message" role="alert">{error}</p>}
-          <button className="primary-link" type="submit" disabled={!title.trim() || parsedParticipants.names.length < 2 || parsedParticipants.names.length > participantLimit || (format === "round-robin" && !scoringValid)}>
+          <button className="primary-link" type="submit" disabled={!title.trim() || parsedParticipants.names.length < 2 || parsedParticipants.names.length > participantLimit || (format === "round-robin" && !scoringValid) || !manualSeedValid}>
             <Trophy size={16} /> Preview tournament
           </button>
         </form>
         {preview && <section className="tournament-preview" aria-label="Tournament preview">
           <header className="tournament-preview-header">
             <div><p className="eyebrow">Review before creating</p><h2>{preview.title}</h2><p>{preview.format === "round-robin" ? `Round robin · ${preview.roundRobinTiebreaker === "head-to-head" ? "Head-to-head tiebreak" : "Seed-order tiebreak"} · ${preview.scoring?.winPoints ?? 3}/${preview.scoring?.drawPoints ?? 1}/${preview.scoring?.lossPoints ?? 0} win/draw/loss points` : "Single elimination"} · {preview.participants.length} participants · {getTournamentProgress(preview).total} matches</p></div>
-            <span className="tournament-preview-seeding">{preview.seeding === "random" ? "Random seeding" : "Entry order"}</span>
+            <span className="tournament-preview-seeding">{preview.seeding === "random" ? "Random seeding" : preview.seeding === "manual" ? "Manual seat order" : "Entry order"}</span>
           </header>
           {preview.seeding === "random" && <p className="muted">This shuffled seed order is fixed for this preview and will be used when you create the tournament.</p>}
           <ol className="tournament-preview-seeds" aria-label="Preview seed order">{preview.participants.map((participant) => <li key={participant.id}><span>Seed {participant.seed}</span><strong>{participant.name}</strong>{(participant.group || participant.role || participant.seat) && <small className="muted">{[participant.group, participant.role, participant.seat ? `Seat ${participant.seat}` : ""].filter(Boolean).join(" · ")}</small>}</li>)}</ol>

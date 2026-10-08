@@ -437,7 +437,16 @@ export function updateTournamentSetup(
   }
 
   const participantByName = new Map(tournament.participants.map((participant) => [participant.name.toLocaleLowerCase(), participant]));
-  const entrants = normalizedNames.map((name) => {
+  const orderedNames = seeding === "manual"
+    ? [...normalizedNames].sort((first, second) => (participantByName.get(first.toLocaleLowerCase())?.seat ?? 0) - (participantByName.get(second.toLocaleLowerCase())?.seat ?? 0))
+    : normalizedNames;
+  if (seeding === "manual") {
+    const seats = orderedNames.map((name) => participantByName.get(name.toLocaleLowerCase())?.seat);
+    if (seats.some((seat) => seat === undefined || !Number.isInteger(seat) || seat < 1) || new Set(seats).size !== seats.length) {
+      throw new Error("Manual seeding requires a unique positive seat number for every participant.");
+    }
+  }
+  const entrants = orderedNames.map((name) => {
     const existing = participantByName.get(name.toLocaleLowerCase());
     return {
       id: existing?.id ?? createId("participant"),

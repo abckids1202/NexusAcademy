@@ -412,7 +412,7 @@ function isValidTournament(value: unknown): boolean {
     (value.format !== undefined && !isOneOf(value.format, ["single-elimination", "round-robin"] as const)) ||
     (value.roundRobinTiebreaker !== undefined && !isOneOf(value.roundRobinTiebreaker, ["seed", "head-to-head"] as const)) ||
     (value.scoring !== undefined && !isValidRoundRobinScoring(value.scoring)) ||
-    !isOneOf(value.seeding, ["entry-order", "random"] as const) ||
+    !isOneOf(value.seeding, ["entry-order", "random", "manual"] as const) ||
     !isOneOf(value.status, ["in_progress", "completed"] as const) ||
     typeof value.nextResultSequence !== "number" || !Number.isFinite(value.nextResultSequence) ||
     typeof value.createdAt !== "string" || typeof value.updatedAt !== "string" ||

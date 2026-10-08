@@ -396,7 +396,7 @@ test("tournament preview shows round-robin byes and creates the exact reviewed r
   await page.getByLabel(/Participants/).fill("Avery\nJordan\nSam");
   await page.getByLabel("Format").selectOption("round-robin");
   await page.getByLabel("Standings tiebreaker").selectOption("head-to-head");
-  await page.getByLabel("Entry order").selectOption("random");
+  await page.getByLabel("Seeding").selectOption("random");
   await page.getByRole("button", { name: "Preview tournament" }).click();
 
   const preview = page.getByRole("region", { name: "Tournament preview" });
