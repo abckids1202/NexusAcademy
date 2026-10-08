@@ -10,9 +10,10 @@ permissions:
   contents: read
 
 jobs:
-  quality:
+  verify:
+    name: Verify application
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 15
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -32,30 +33,31 @@ jobs:
       - name: Unit tests
         run: npm test -- --run
 
+      - name: Dependency audit
+        run: npm run audit
+
       - name: Production build
         run: npm run build
 
-      - name: Dependency audit
-        run: npm audit --audit-level=high
-
-      - name: Install Chromium
+      - name: Install browser engines
         run: npx playwright install --with-deps chromium firefox webkit
 
       - name: Browser tests
         run: npm run test:e2e
 
-      - name: Cloud mock browser tests
-        run: npm run test:e2e:cloud
-
-      - name: Firefox and WebKit smoke tests
+      - name: Cross-browser smoke tests
         run: npm run test:e2e:cross-browser
 
-      - name: Upload Playwright artifacts
-        if: failure()
+      - name: Cloud integration mock tests
+        run: npm run test:e2e:cloud
+
+      - name: Upload Playwright report
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-artifacts
+          name: playwright-report
           path: |
-            test-results/
             playwright-report/
+            test-results/
           if-no-files-found: ignore
+          retention-days: 14
