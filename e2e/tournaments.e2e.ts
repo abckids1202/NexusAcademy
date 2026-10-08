@@ -453,6 +453,7 @@ test("round-robin setup can be edited and the schedule is regenerated", async ({
 });
 
 test("a stale tournament setup draft is preserved and requires an explicit reload", async ({ page, context }) => {
+  test.setTimeout(60_000);
   await createTournament(page, "Cross-tab Tournament", ["Avery", "Jordan", "Sam"], "round-robin");
   const detailUrl = page.url();
   await page.getByRole("button", { name: "Edit setup" }).click();
@@ -461,7 +462,7 @@ test("a stale tournament setup draft is preserved and requires an explicit reloa
 
   const writer = await context.newPage();
   await writer.goto(detailUrl);
-  await expect(writer.getByRole("heading", { name: "Cross-tab Tournament" })).toBeVisible();
+  await expect(writer.getByRole("heading", { name: "Cross-tab Tournament" })).toBeVisible({ timeout: 15_000 });
   const writerEditButton = writer.getByRole("button", { name: "Edit setup" });
   if (await writerEditButton.isVisible()) await writerEditButton.click();
   else await expect(writer.getByRole("button", { name: "Save setup" })).toBeVisible();

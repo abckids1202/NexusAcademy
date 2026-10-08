@@ -438,6 +438,8 @@ function isValidTournament(value: unknown): boolean {
   const validParticipants = value.participants.every((participant) => isRecord(participant) &&
     typeof participant.id === "string" && typeof participant.name === "string" &&
     typeof participant.seed === "number" && Number.isInteger(participant.seed) &&
+    hasOptionalString(participant, "group") && hasOptionalString(participant, "role") &&
+    (participant.seat === undefined || (typeof participant.seat === "number" && Number.isInteger(participant.seat) && participant.seat > 0)) &&
     (participant.attendanceStatus === undefined || isOneOf(participant.attendanceStatus, ["expected", "checked-in", "not-present"] as const)));
   const participantIds = new Set(value.participants.filter(isRecord).map((participant) => participant.id));
   if (events.some((event) => isRecord(event) && event.type === "participant-attendance-changed" &&

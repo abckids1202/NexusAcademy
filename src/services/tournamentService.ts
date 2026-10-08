@@ -18,6 +18,12 @@ import {
 import { defaultRoundRobinScoring } from "../data/tournamentDefaults";
 import { loadData, saveData, StaleEditError } from "./storageService";
 
+export type TournamentRosterMetadata = {
+  group?: string;
+  role?: string;
+  seat?: number;
+};
+
 export function getTournaments(): Tournament[] {
   return loadData().tournaments;
 }
@@ -44,8 +50,9 @@ export function createTournamentPreview(
   format: TournamentFormat = "single-elimination",
   roundRobinTiebreaker: RoundRobinTiebreaker = "seed",
   scoring: RoundRobinScoring = defaultRoundRobinScoring,
+  metadataByName: Record<string, TournamentRosterMetadata> = {},
 ): Tournament {
-  const entrants = names.map((name) => ({ id: createId("participant"), name }));
+  const entrants = names.map((name) => ({ id: createId("participant"), name, ...(metadataByName[name.toLocaleLowerCase()] ?? {}) }));
   const tournament = format === "round-robin"
     ? createRoundRobinTournament(title, entrants, { seeding, roundRobinTiebreaker, scoring })
     : createSingleEliminationTournament(title, entrants, { seeding });
@@ -68,8 +75,9 @@ export function createTournament(
   format: TournamentFormat = "single-elimination",
   roundRobinTiebreaker: RoundRobinTiebreaker = "seed",
   scoring: RoundRobinScoring = defaultRoundRobinScoring,
+  metadataByName: Record<string, TournamentRosterMetadata> = {},
 ): Tournament {
-  return createTournamentFromPreview(createTournamentPreview(title, names, seeding, format, roundRobinTiebreaker, scoring));
+  return createTournamentFromPreview(createTournamentPreview(title, names, seeding, format, roundRobinTiebreaker, scoring, metadataByName));
 }
 
 export function updateTournamentSetup(

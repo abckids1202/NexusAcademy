@@ -75,6 +75,9 @@ export type TournamentParticipant = {
   id: string;
   name: string;
   seed: number;
+  group?: string;
+  role?: string;
+  seat?: number;
   attendanceStatus?: TournamentParticipantAttendance;
 };
 

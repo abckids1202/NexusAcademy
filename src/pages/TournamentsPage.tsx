@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, Trash2, Trophy, Upload } from "lucide-react";
 import { PageHeader } from "../components/common/PageHeader";
 import { ShellCard } from "../components/common/ShellCard";
-import { createTournamentFromPreview, createTournamentPreview, deleteTournament } from "../services/tournamentService";
+import { createTournamentFromPreview, createTournamentPreview, deleteTournament, type TournamentRosterMetadata } from "../services/tournamentService";
 import { useTournaments } from "../hooks/useTournaments";
 import type { RoundRobinScoring, RoundRobinTiebreaker, Tournament, TournamentFormat, TournamentMatch, TournamentSeeding } from "../types";
 import { MAX_ROUND_ROBIN_PARTICIPANTS, MAX_TOURNAMENT_PARTICIPANTS, getTournamentProgress, getTournamentRoundLabel, isValidRoundRobinScoring } from "../utils/tournamentLogic";
@@ -59,6 +59,9 @@ export function TournamentsPage() {
   const csvAppendedCount = participantCsvPreview
     ? parseParticipantNames(`${participantText}\n${participantCsvPreview.names.join("\n")}`).names.length
     : 0;
+  const directoryMetadataByName = useMemo<Record<string, TournamentRosterMetadata>>(() => Object.fromEntries(
+    directoryParticipants.map((participant) => [participant.name.toLocaleLowerCase(), participant.group ? { group: participant.group } : {}]),
+  ), [directoryParticipants]);
 
   async function previewParticipantsCsv(file?: File) {
     if (!file) return;
@@ -105,7 +108,7 @@ export function TournamentsPage() {
     event.preventDefault();
     setError("");
     try {
-      setPreview(createTournamentPreview(title, parsedParticipants.names, seeding, format, roundRobinTiebreaker, scoring));
+      setPreview(createTournamentPreview(title, parsedParticipants.names, seeding, format, roundRobinTiebreaker, scoring, directoryMetadataByName));
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Could not prepare the tournament preview.");
     }
@@ -209,7 +212,7 @@ export function TournamentsPage() {
             <span className="tournament-preview-seeding">{preview.seeding === "random" ? "Random seeding" : "Entry order"}</span>
           </header>
           {preview.seeding === "random" && <p className="muted">This shuffled seed order is fixed for this preview and will be used when you create the tournament.</p>}
-          <ol className="tournament-preview-seeds" aria-label="Preview seed order">{preview.participants.map((participant) => <li key={participant.id}><span>Seed {participant.seed}</span><strong>{participant.name}</strong></li>)}</ol>
+          <ol className="tournament-preview-seeds" aria-label="Preview seed order">{preview.participants.map((participant) => <li key={participant.id}><span>Seed {participant.seed}</span><strong>{participant.name}</strong>{participant.group && <small className="muted">{participant.group}</small>}</li>)}</ol>
           <div className="tournament-preview-rounds" aria-label="Preview pairings" tabIndex={0}>
             {preview.rounds.map((round, roundIndex) => <section className="tournament-preview-round" key={round.roundNumber} aria-label={getTournamentRoundLabel(round.roundNumber, preview.rounds.length, preview.format)}>
               <h3>{getTournamentRoundLabel(round.roundNumber, preview.rounds.length, preview.format)}</h3>
@@ -218,7 +221,7 @@ export function TournamentsPage() {
           </div>
           <div className="hero-actions">
             <button className="primary-link" type="button" onClick={handleCreatePreview}><Trophy size={16} /> Create this tournament</button>
-            <button className="secondary-link" type="button" onClick={() => setPreview(createTournamentPreview(title, parsedParticipants.names, seeding, format, roundRobinTiebreaker, scoring))}>{seeding === "random" ? "Shuffle and preview again" : "Refresh preview"}</button>
+            <button className="secondary-link" type="button" onClick={() => setPreview(createTournamentPreview(title, parsedParticipants.names, seeding, format, roundRobinTiebreaker, scoring, directoryMetadataByName))}>{seeding === "random" ? "Shuffle and preview again" : "Refresh preview"}</button>
           </div>
         </section>}
       </ShellCard>

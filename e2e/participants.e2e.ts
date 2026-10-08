@@ -28,16 +28,25 @@ test("participant directory creates, searches, edits, and archives reusable prof
 test("tournament creation can add active directory participants", async ({ page }) => {
   await page.goto("/participants");
   await page.getByLabel("Name").fill("Jordan Lee");
+  await page.getByLabel(/Group or team/).fill("Blue team");
   await page.getByRole("button", { name: "Add participant" }).click();
   await page.getByLabel("Name").fill("Sam Ortiz");
+  await page.getByLabel(/Group or team/).fill("Gold team");
   await page.getByRole("button", { name: "Add participant" }).click();
 
   await page.goto("/tournaments");
-  await page.getByLabel("Saved participants").selectOption({ label: "Jordan Lee" });
+  const savedParticipants = page.getByLabel("Saved participants");
+  const jordanOption = savedParticipants.locator("option").filter({ hasText: "Jordan Lee" });
+  await savedParticipants.selectOption((await jordanOption.getAttribute("value")) ?? "");
   await page.getByRole("button", { name: "Add selected participants" }).click();
   await expect(page.getByLabel(/Participants/)).toHaveValue("Jordan Lee");
   await expect(page.getByRole("button", { name: "Preview tournament" })).toBeDisabled();
-  await page.getByLabel("Saved participants").selectOption({ label: "Sam Ortiz" });
+  const samOption = savedParticipants.locator("option").filter({ hasText: "Sam Ortiz" });
+  await savedParticipants.selectOption((await samOption.getAttribute("value")) ?? "");
   await page.getByRole("button", { name: "Add selected participants" }).click();
   await expect(page.getByLabel(/Participants/)).toHaveValue("Jordan Lee\nSam Ortiz");
+  await page.getByLabel("Tournament name").fill("Directory metadata cup");
+  await page.getByRole("button", { name: "Preview tournament" }).click();
+  await expect(page.getByRole("region", { name: "Tournament preview" })).toContainText("Blue team");
+  await expect(page.getByRole("region", { name: "Tournament preview" })).toContainText("Gold team");
 });

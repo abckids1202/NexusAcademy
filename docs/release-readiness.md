@@ -13,7 +13,7 @@
 - Vitest is scoped to `src/**/*.test.ts`; legacy repository tests cannot silently contaminate the WheelForge gate.
 - GitHub Actions runs lint, unit tests, audit, build, Chromium browser tests, cloud-mock tests, and uploads Playwright artifacts on failure.
 - Page routes are lazy-loaded; the main JavaScript chunk is approximately 351 kB minified instead of the previous 515 kB.
-- A shared local participant directory supports profile CRUD, archive/restore, search, backup persistence, and tournament roster reuse.
+- A shared local participant directory supports profile CRUD, archive/restore, search, backup persistence, tournament roster reuse, and group metadata carried into reviewed brackets.
 - Tournament CSV imports detect common headers and support explicit participant-name column mapping, with legacy first-column files still supported.
 
 ## Release decision

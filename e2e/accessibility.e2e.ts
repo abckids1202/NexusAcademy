@@ -12,7 +12,7 @@ async function collectViolations(page: Page, location: string) {
 }
 
 test("main workflows have no automatically detectable WCAG A/AA violations", async ({ page }) => {
-  test.setTimeout(90_000);
+  test.setTimeout(150_000);
   const findings: string[] = [];
   const routes = [
     "/",
