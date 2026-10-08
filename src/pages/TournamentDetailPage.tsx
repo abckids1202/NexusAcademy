@@ -5,7 +5,7 @@ import { PageHeader } from "../components/common/PageHeader";
 import { ShellCard } from "../components/common/ShellCard";
 import { TournamentConditionSpinner } from "../components/tournament/TournamentConditionSpinner";
 import { TournamentWinnerDrawPanel } from "../components/tournament/TournamentWinnerDrawPanel";
-import { correctTournamentMatchScore, correctTournamentMatchWinner, drawTournamentWinner, recordTournamentMatchCondition, recordTournamentMatchScore, recordTournamentMatchWinner, undoTournamentResult, undoTournamentWinnerDraw, updateTournamentSetup } from "../services/tournamentService";
+import { correctTournamentMatchScore, correctTournamentMatchWinner, drawTournamentWinner, recordTournamentMatchBye, recordTournamentMatchCondition, recordTournamentMatchScore, recordTournamentMatchWinner, undoTournamentResult, undoTournamentWinnerDraw, updateTournamentSetup } from "../services/tournamentService";
 import type { RoundRobinScoring, Tournament, TournamentConditionDraw, TournamentEvent } from "../types";
 import { useWheels } from "../hooks/useWheels";
 import { useTournaments } from "../hooks/useTournaments";
@@ -89,6 +89,7 @@ function describeTournamentEvent(event: TournamentEvent, participants: Map<strin
   if (event.type === "result-recorded" && event.resultMethod === "forfeit") {
     return `${matchLabel}: ${forfeitingParticipant} forfeited; ${winner} was awarded the win.`;
   }
+  if (event.type === "bye-confirmed") return `${matchLabel}: confirmed ${winner} as advancing on a bye.`;
   if (event.type === "result-recorded") return event.scoreA !== undefined && event.scoreB !== undefined
     ? `${matchLabel}: recorded ${event.scoreA}-${event.scoreB}${winner ? `, ${winner} won` : ", a draw"}.`
     : `${matchLabel}: recorded ${winner} as the winner.`;
@@ -204,6 +205,16 @@ export function TournamentDetailPage() {
       setMessage("");
     } catch (reason) {
       setMessage(reason instanceof Error ? reason.message : "Could not record that result.");
+    }
+  }
+
+  function confirmBye(matchId: string, participantName: string) {
+    if (!tournament) return;
+    try {
+      recordTournamentMatchBye(tournament.id, matchId);
+      setMessage(`${participantName} confirmed as advancing on a bye.`);
+    } catch (reason) {
+      setMessage(reason instanceof Error ? reason.message : "Could not confirm the bye.");
     }
   }
 
@@ -466,7 +477,8 @@ export function TournamentDetailPage() {
                     <strong>{participant.name}</strong>
                     {(participant.group || participant.role || participant.seat) && <small className="muted">{[participant.group, participant.role, participant.seat ? `Seat ${participant.seat}` : ""].filter(Boolean).join(" · ")}</small>}
                     {winner?.id === participant.id && correctingMatchId !== match.id && <span className="winner-tag">Winner</span>}
-                    {match.status === "pending" && <button className="record-winner-button" type="button" aria-label={`Record ${participant.name} as winner of round ${round.roundNumber} match ${match.matchNumber}`} onClick={() => chooseWinner(match.id, participant.id)}>Winner</button>}
+                    {match.status === "pending" && participantA && participantB && <button className="record-winner-button" type="button" aria-label={`Record ${participant.name} as winner of round ${round.roundNumber} match ${match.matchNumber}`} onClick={() => chooseWinner(match.id, participant.id)}>Winner</button>}
+                    {match.status === "pending" && !participantB && side === 0 && <button className="record-winner-button" type="button" aria-label={`Confirm bye for ${participant.name} in match ${match.matchNumber}`} onClick={() => confirmBye(match.id, participant.name)}>Confirm bye</button>}
                     {match.status === "complete" && correctingMatchId === match.id && !hasScore && <button className="record-winner-button" type="button" aria-label={`Correct result: make ${participant.name} the winner of match ${match.matchNumber}`} onClick={() => correctWinner(match.id, participant.id)}>Set winner</button>}
                     {match.status === "complete" && correctingMatchId !== match.id && !hasScore && winner?.id === participant.id && <button className="record-winner-button" type="button" aria-label={`Correct result for match ${match.matchNumber}`} onClick={() => setCorrectingMatchId(match.id)}>Correct</button>}
                     {match.status === "complete" && winner && correctingMatchId !== match.id && winner.id !== participant.id && <span className="muted">{tournament.format === "round-robin" ? "Lost match" : "Eliminated"}</span>}

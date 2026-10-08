@@ -5,14 +5,14 @@ import { TournamentConditionSpinner } from "../components/tournament/TournamentC
 import { useTournaments } from "../hooks/useTournaments";
 import { useWheels } from "../hooks/useWheels";
 import type { Tournament, TournamentMatch, TournamentParticipantAttendance } from "../types";
-import { correctTournamentMatchScore, correctTournamentMatchWinner, recordTournamentMatchCondition, recordTournamentMatchForfeit, recordTournamentMatchScore, recordTournamentMatchWinner, undoTournamentResult, updateTournamentParticipantAttendance } from "../services/tournamentService";
+import { correctTournamentMatchScore, correctTournamentMatchWinner, recordTournamentMatchBye, recordTournamentMatchCondition, recordTournamentMatchForfeit, recordTournamentMatchScore, recordTournamentMatchWinner, undoTournamentResult, updateTournamentParticipantAttendance } from "../services/tournamentService";
 import { getDependentCompletedMatchCount, getTournamentProgress, getTournamentRoundLabel, getTournamentStandings, hasUndoableTournamentResult } from "../utils/tournamentLogic";
 
 type QueueMatch = { match: TournamentMatch; roundNumber: number };
 
 function getReadyMatches(tournament: Tournament): QueueMatch[] {
   return tournament.rounds.flatMap((round) => round.matches
-    .filter((match) => match.status === "pending" && match.participantAId && match.participantBId)
+    .filter((match) => match.status === "pending" && match.participantAId && (match.participantBId || tournament.byePolicy === "manual"))
     .map((match) => ({ match, roundNumber: round.roundNumber })));
 }
 
@@ -205,6 +205,7 @@ export function TournamentHostPage() {
           <div className="host-contestants">
             <div><span>Participant A</span><strong>{participantA}</strong></div><span className="host-versus">VS</span><div><span>Participant B</span><strong>{participantB}</strong></div>
           </div>
+          {!participantB ? <div className="host-winner-actions"><p>This fixture has one participant. Confirm the bye to advance them.</p><button className="host-primary-action" type="button" onClick={() => { try { recordTournamentMatchBye(tournament.id, match.id); announceSuccess(`${participantA} confirmed as advancing on a bye.`); setSelectedMatchId(""); } catch (reason) { announceFailure(reason, "Could not confirm the bye."); } }}>Confirm bye for {participantA}</button></div> : <>
           {match.conditionDraw && <p className="host-condition-result"><strong>Condition:</strong> {match.conditionDraw.optionLabel}<span>{match.conditionDraw.wheelTitle} · {Math.round(match.conditionDraw.optionChance * 1000) / 10}% chance</span></p>}
           {!match.conditionDraw && <p className="host-subtle">Optional: draw a map, challenge, or rule. It does not choose the winner.</p>}
           {conditionMatchId === match.id
@@ -231,6 +232,7 @@ export function TournamentHostPage() {
               <button type="button" onClick={() => recordForfeit(match.participantBId!)}>{participantB} forfeits</button>
             </div>
           </div>
+          </>}
         </article> : <div className="host-waiting-state">
           <h3>{tournament.status === "completed" ? "The tournament is complete" : "Waiting on earlier results"}</h3>
           <p>{tournament.status === "completed" ? (progress.champion ? `${progress.champion} is the champion.` : "The final standings are tied.") : "The bracket will unlock the next match as soon as its participants are decided."}</p>

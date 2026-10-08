@@ -10,6 +10,7 @@ import type {
   RoundRobinScoring,
   RoundRobinTiebreaker,
   TournamentSeeding,
+  TournamentByePolicy,
   TournamentWinnerDraw,
 } from "../types";
 import { createId } from "./ids";
@@ -21,6 +22,7 @@ export const MAX_TOURNAMENT_PARTICIPANTS = 256;
 type TournamentOptions = {
   id?: string;
   seeding?: TournamentSeeding;
+  byePolicy?: TournamentByePolicy;
   roundRobinTiebreaker?: RoundRobinTiebreaker;
   scoring?: RoundRobinScoring;
   createdAt?: string;
@@ -109,6 +111,7 @@ function createTournamentBase(
     roundRobinTiebreaker: format === "round-robin" ? prepared.options.roundRobinTiebreaker ?? "seed" : "seed",
     scoring: { ...(prepared.options.scoring ?? defaultRoundRobinScoring) },
     seeding: prepared.options.seeding ?? "entry-order",
+    byePolicy: prepared.options.byePolicy ?? "automatic",
     status: "in_progress",
     participants: prepared.participants,
     rounds,
@@ -350,9 +353,11 @@ export function createSingleEliminationTournament(
     if (hasA === hasB) continue;
     const winnerId = match.participantAId ?? match.participantBId;
     if (!winnerId) continue;
-    match.status = "bye";
-    match.winnerId = winnerId;
-    advanceByeWinner(rounds, 0, matchIndex, winnerId);
+    if ((prepared.options.byePolicy ?? "automatic") === "automatic") {
+      match.status = "bye";
+      match.winnerId = winnerId;
+      advanceByeWinner(rounds, 0, matchIndex, winnerId);
+    }
   }
 
   return createTournamentBase(prepared, "single-elimination", rounds);
@@ -384,9 +389,9 @@ export function createRoundRobinTournament(
         if (participant) matches.push({
           id: makeId("match"),
           matchNumber,
-          status: "bye",
+          status: prepared.options.byePolicy === "manual" ? "pending" : "bye",
           participantAId: participant.id,
-          winnerId: participant.id,
+          ...(prepared.options.byePolicy === "manual" ? {} : { winnerId: participant.id }),
         });
       } else {
         matches.push({
@@ -423,6 +428,7 @@ export function updateTournamentSetup(
   options: Pick<TournamentOptions, "idFactory" | "random"> = {},
   roundRobinTiebreaker: RoundRobinTiebreaker = tournament.roundRobinTiebreaker ?? "seed",
   scoring: RoundRobinScoring = tournament.scoring ?? defaultRoundRobinScoring,
+  byePolicy: TournamentByePolicy = tournament.byePolicy ?? "automatic",
 ): Tournament {
   if (!canEditTournamentSetup(tournament)) {
     throw new Error("Tournament setup is locked after event activity has been recorded.");
@@ -462,6 +468,7 @@ export function updateTournamentSetup(
     seeding,
     roundRobinTiebreaker,
     scoring,
+    byePolicy,
     createdAt: tournament.createdAt,
   };
   const updated = format === "round-robin"
@@ -566,6 +573,30 @@ export function recordTournamentForfeit(
     ? { ...event, resultMethod: "forfeit" as const, forfeitingParticipantId }
     : event);
   return { ...recorded, rounds, events };
+}
+
+export function recordTournamentBye(
+  tournament: Tournament,
+  matchId: string,
+  completedAt = new Date().toISOString(),
+): Tournament {
+  if (tournament.status === "completed") throw new Error("This tournament is already complete.");
+  const rounds = tournament.rounds.map((round) => ({ ...round, matches: round.matches.map((match) => ({ ...match })) }));
+  const roundIndex = rounds.findIndex((round) => round.matches.some((match) => match.id === matchId));
+  const matchIndex = rounds[roundIndex]?.matches.findIndex((item) => item.id === matchId) ?? -1;
+  const match = rounds[roundIndex]?.matches[matchIndex];
+  if (!match || match.status !== "pending") throw new Error("This match is not waiting for bye confirmation.");
+  const participants = [match.participantAId, match.participantBId].filter((id): id is string => Boolean(id));
+  if (participants.length !== 1) throw new Error("A bye can only be confirmed when exactly one participant is present.");
+  const winnerId = participants[0];
+  match.status = "bye";
+  match.winnerId = winnerId;
+  match.completedAt = completedAt;
+  match.resultSequence = tournament.nextResultSequence;
+  if (tournament.format !== "round-robin") advanceByeWinner(rounds, roundIndex, matchIndex, winnerId);
+  const eventUpdate = appendTournamentEvent(tournament, createResultEvent("bye-confirmed", rounds[roundIndex], match, completedAt, { winnerId }));
+  const isComplete = rounds.every((round) => round.matches.every((roundMatch) => roundMatch.status !== "pending"));
+  return { ...tournament, rounds, ...eventUpdate, status: isComplete ? "completed" : "in_progress", nextResultSequence: tournament.nextResultSequence + 1, updatedAt: completedAt, ...(isComplete ? { completedAt } : { completedAt: undefined }) };
 }
 
 function validateMatchScore(score: number): void {

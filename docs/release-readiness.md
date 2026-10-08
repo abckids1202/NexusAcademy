@@ -5,16 +5,17 @@
 ## Verified in the current checkout
 
 - `npm run lint` passes.
-- `npm test -- --run` passes with 113 tests across 10 source test files.
+- `npm test -- --run` passes with 117 tests across 10 source test files.
 - `npm run audit` passes with no high or critical advisories.
 - `npm run build` passes.
-- `npm run test:e2e` passes with 41 Chromium journeys.
+- `npm run test:e2e` passes with 42 Chromium journeys.
 - `npm run test:e2e:cloud` passes with 2 mocked cloud journeys.
 - Vitest is scoped to `src/**/*.test.ts`; legacy repository tests cannot silently contaminate the WheelForge gate.
 - GitHub Actions runs lint, unit tests, audit, build, Chromium browser tests, cloud-mock tests, and uploads Playwright artifacts on failure.
 - Page routes are lazy-loaded; the main JavaScript chunk is approximately 351 kB minified instead of the previous 515 kB.
 - A shared local participant directory supports profile CRUD, archive/restore, search, backup persistence, tournament roster reuse, and group metadata carried into reviewed brackets.
 - Tournament setup supports per-participant group/team labels, roles, seat numbers, random seat assignment, manual seed ordering, and metadata-preserving setup edits.
+- Tournament setup supports automatic or host-confirmed bye policies; manual byes remain pending, are confirmed from host/detail views, advance the bracket, and are recorded in activity history.
 - Tournament CSV imports detect common headers and support explicit participant-name column mapping, with legacy first-column files still supported.
 
 ## Release decision
@@ -33,4 +34,4 @@ WheelForge is suitable for a local beta release after a clean-clone check. It is
 
 ## Known product scope
 
-The current tournament engine supports single elimination and round robin. Team balancing, participant-wide withdrawal, configurable byes, double elimination, Swiss, group stages, free-for-all, best-of-N, third-place matches, public sharing, collaboration, and independently verifiable randomness remain future milestones.
+The current tournament engine supports single elimination and round robin. Team balancing, participant-wide withdrawal, double elimination, Swiss, group stages, free-for-all, best-of-N, third-place matches, public sharing, collaboration, and independently verifiable randomness remain future milestones.

@@ -1,10 +1,11 @@
-import type { RoundRobinScoring, RoundRobinTiebreaker, Tournament, TournamentConditionDraw, TournamentFormat, TournamentParticipantAttendance, TournamentSeeding } from "../types";
+import type { RoundRobinScoring, RoundRobinTiebreaker, Tournament, TournamentByePolicy, TournamentConditionDraw, TournamentFormat, TournamentParticipantAttendance, TournamentSeeding } from "../types";
 import { createId } from "../utils/ids";
 import {
   createSingleEliminationTournament,
   createRoundRobinTournament,
   correctTournamentWinner,
   recordTournamentWinner,
+  recordTournamentBye,
   recordTournamentForfeit,
   recordTournamentScore,
   correctTournamentScore,
@@ -51,6 +52,7 @@ export function createTournamentPreview(
   roundRobinTiebreaker: RoundRobinTiebreaker = "seed",
   scoring: RoundRobinScoring = defaultRoundRobinScoring,
   metadataByName: Record<string, TournamentRosterMetadata> = {},
+  byePolicy?: TournamentByePolicy,
 ): Tournament {
   if (seeding === "manual") {
     const seats = names.map((name) => metadataByName[name.toLocaleLowerCase()]?.seat);
@@ -63,8 +65,8 @@ export function createTournamentPreview(
     : names;
   const entrants = orderedNames.map((name) => ({ id: createId("participant"), name, ...(metadataByName[name.toLocaleLowerCase()] ?? {}) }));
   const tournament = format === "round-robin"
-    ? createRoundRobinTournament(title, entrants, { seeding, roundRobinTiebreaker, scoring })
-    : createSingleEliminationTournament(title, entrants, { seeding });
+    ? createRoundRobinTournament(title, entrants, { seeding, roundRobinTiebreaker, scoring, byePolicy })
+    : createSingleEliminationTournament(title, entrants, { seeding, byePolicy });
   return tournament;
 }
 
@@ -85,8 +87,9 @@ export function createTournament(
   roundRobinTiebreaker: RoundRobinTiebreaker = "seed",
   scoring: RoundRobinScoring = defaultRoundRobinScoring,
   metadataByName: Record<string, TournamentRosterMetadata> = {},
+  byePolicy?: TournamentByePolicy,
 ): Tournament {
-  return createTournamentFromPreview(createTournamentPreview(title, names, seeding, format, roundRobinTiebreaker, scoring, metadataByName));
+  return createTournamentFromPreview(createTournamentPreview(title, names, seeding, format, roundRobinTiebreaker, scoring, metadataByName, byePolicy));
 }
 
 export function updateTournamentSetup(
@@ -98,13 +101,20 @@ export function updateTournamentSetup(
   roundRobinTiebreaker: RoundRobinTiebreaker = "seed",
   scoring: RoundRobinScoring = defaultRoundRobinScoring,
   expectedUpdatedAt?: string,
+  byePolicy?: TournamentByePolicy,
 ): Tournament {
   const tournament = getTournament(tournamentId);
   if (!tournament) throw new Error("Tournament not found.");
   if (expectedUpdatedAt !== undefined && tournament.updatedAt !== expectedUpdatedAt) {
     throw new StaleEditError("tournament");
   }
-  return saveTournament(rebuildTournamentSetup(tournament, title, names, seeding, format, undefined, roundRobinTiebreaker, scoring));
+  return saveTournament(rebuildTournamentSetup(tournament, title, names, seeding, format, undefined, roundRobinTiebreaker, scoring, byePolicy ?? tournament.byePolicy ?? "automatic"));
+}
+
+export function recordTournamentMatchBye(tournamentId: string, matchId: string): Tournament {
+  const tournament = getTournament(tournamentId);
+  if (!tournament) throw new Error("Tournament not found.");
+  return saveTournament(recordTournamentBye(tournament, matchId));
 }
 
 export function recordTournamentMatchWinner(

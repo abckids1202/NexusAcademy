@@ -1,4 +1,5 @@
 export type TournamentSeeding = "entry-order" | "random" | "manual";
+export type TournamentByePolicy = "automatic" | "manual";
 export type TournamentFormat = "single-elimination" | "round-robin";
 export type RoundRobinTiebreaker = "seed" | "head-to-head";
 export type RoundRobinScoring = {
@@ -10,7 +11,7 @@ export type TournamentStatus = "in_progress" | "completed";
 export type TournamentMatchStatus = "pending" | "complete" | "bye";
 export type TournamentParticipantAttendance = "expected" | "checked-in" | "not-present";
 export type TournamentResultMethod = "played" | "forfeit";
-export type TournamentEventType = "result-recorded" | "result-corrected" | "result-undone" | "condition-drawn" | "winner-drawn" | "winner-draw-undone" | "participant-attendance-changed";
+export type TournamentEventType = "result-recorded" | "result-corrected" | "result-undone" | "bye-confirmed" | "condition-drawn" | "winner-drawn" | "winner-draw-undone" | "participant-attendance-changed";
 
 export type TournamentDrawEntrant = {
   participantId: string;
@@ -109,6 +110,7 @@ export type Tournament = {
   roundRobinTiebreaker: RoundRobinTiebreaker;
   scoring?: RoundRobinScoring;
   seeding: TournamentSeeding;
+  byePolicy: TournamentByePolicy;
   status: TournamentStatus;
   participants: TournamentParticipant[];
   rounds: TournamentRound[];

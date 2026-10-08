@@ -22,6 +22,7 @@ import {
   undoTournamentWinnerDraw,
   setTournamentParticipantAttendance,
   recordTournamentForfeit,
+  recordTournamentBye,
 } from "./tournamentLogic";
 
 function entrants(count: number): Array<Pick<TournamentParticipant, "id" | "name">> {
@@ -633,5 +634,21 @@ describe("match results and advancement", () => {
     expect(items).toEqual([1, 2, 3, 4]);
     expect(getTournamentRoundLabel(3, 4)).toBe("Semifinals");
     expect(getTournamentRoundLabel(4, 4)).toBe("Final");
+  });
+
+  it("keeps manual byes pending until confirmed, then advances and audits them", () => {
+    let tournament = createSingleEliminationTournament("Manual Bye Cup", entrants(3), { byePolicy: "manual" });
+    const bye = tournament.rounds[0].matches.find((match) => Boolean(match.participantAId) !== Boolean(match.participantBId));
+    expect(bye?.status).toBe("pending");
+    expect(tournament.rounds[1].matches.some((match) => match.participantAId === bye?.participantAId || match.participantBId === bye?.participantAId)).toBe(false);
+    tournament = recordTournamentBye(tournament, bye!.id, "2026-01-02T00:00:00.000Z");
+    expect(tournament.rounds[0].matches.find((match) => match.id === bye!.id)?.status).toBe("bye");
+    expect(tournament.events.at(-1)?.type).toBe("bye-confirmed");
+    expect(tournament.rounds[1].matches.some((match) => match.participantAId === bye?.participantAId || match.participantBId === bye?.participantAId)).toBe(true);
+  });
+
+  it("supports manual byes in round-robin schedules", () => {
+    const tournament = createRoundRobinTournament("Manual Bye League", entrants(3), { byePolicy: "manual" });
+    expect(tournament.rounds.flatMap((round) => round.matches).filter((match) => match.status === "pending" && match.participantAId && !match.participantBId)).toHaveLength(3);
   });
 });

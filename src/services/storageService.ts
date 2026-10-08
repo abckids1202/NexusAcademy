@@ -116,6 +116,7 @@ function normalizeData(value: unknown): WheelForgeData {
             ...value,
             format: value.format ?? "single-elimination",
             roundRobinTiebreaker: value.roundRobinTiebreaker ?? "seed",
+            byePolicy: value.byePolicy ?? "automatic",
             scoring: value.scoring ?? { ...defaultRoundRobinScoring },
             events,
             nextEventSequence,
@@ -340,7 +341,7 @@ function isValidTournamentWinnerDraw(value: unknown): boolean {
 function isValidTournamentEvent(value: unknown): boolean {
   if (!isRecord(value) || typeof value.id !== "string" ||
     typeof value.sequence !== "number" || !Number.isInteger(value.sequence) || value.sequence < 1 ||
-    !isOneOf(value.type, ["result-recorded", "result-corrected", "result-undone", "condition-drawn", "winner-drawn", "winner-draw-undone", "participant-attendance-changed"] as const) ||
+    !isOneOf(value.type, ["result-recorded", "result-corrected", "result-undone", "bye-confirmed", "condition-drawn", "winner-drawn", "winner-draw-undone", "participant-attendance-changed"] as const) ||
     typeof value.createdAt !== "string" || Number.isNaN(Date.parse(value.createdAt)) ||
     !hasOptionalString(value, "matchId") || !hasOptionalString(value, "relatedEventId") ||
     (value.roundNumber !== undefined && (typeof value.roundNumber !== "number" || !Number.isInteger(value.roundNumber))) ||
@@ -358,7 +359,7 @@ function isValidTournamentEvent(value: unknown): boolean {
       (!Array.isArray(value.invalidatedMatches) || !value.invalidatedMatches.every(isValidTournamentEventMatch)))) return false;
 
   const matchEvent = value.type === "result-recorded" || value.type === "result-corrected" ||
-    value.type === "result-undone" || value.type === "condition-drawn";
+    value.type === "result-undone" || value.type === "bye-confirmed" || value.type === "condition-drawn";
   if (matchEvent && (typeof value.matchId !== "string" || !value.matchId.trim() ||
     typeof value.roundNumber !== "number" || value.roundNumber < 1 ||
     typeof value.matchNumber !== "number" || value.matchNumber < 1)) return false;
@@ -374,6 +375,7 @@ function isValidTournamentEvent(value: unknown): boolean {
     if (!validCurrent || !validPrevious) return false;
   }
   if (value.type === "result-undone" && typeof value.previousWinnerId !== "string" && !hasScorePair(value, "previousScoreA", "previousScoreB")) return false;
+  if (value.type === "bye-confirmed" && (typeof value.winnerId !== "string" || value.previousWinnerId !== undefined || value.resultMethod !== undefined || value.previousResultMethod !== undefined || value.conditionDraw !== undefined || value.winnerDraw !== undefined || value.invalidatedMatches !== undefined || hasScorePair(value, "scoreA", "scoreB"))) return false;
   const resultEvent = value.type === "result-recorded" || value.type === "result-corrected" || value.type === "result-undone";
   const currentForfeit = value.resultMethod === "forfeit";
   const previousForfeit = value.previousResultMethod === "forfeit";
@@ -411,6 +413,7 @@ function isValidTournament(value: unknown): boolean {
   if (!isRecord(value) || typeof value.id !== "string" || typeof value.title !== "string" ||
     (value.format !== undefined && !isOneOf(value.format, ["single-elimination", "round-robin"] as const)) ||
     (value.roundRobinTiebreaker !== undefined && !isOneOf(value.roundRobinTiebreaker, ["seed", "head-to-head"] as const)) ||
+    (value.byePolicy !== undefined && !isOneOf(value.byePolicy, ["automatic", "manual"] as const)) ||
     (value.scoring !== undefined && !isValidRoundRobinScoring(value.scoring)) ||
     !isOneOf(value.seeding, ["entry-order", "random", "manual"] as const) ||
     !isOneOf(value.status, ["in_progress", "completed"] as const) ||
