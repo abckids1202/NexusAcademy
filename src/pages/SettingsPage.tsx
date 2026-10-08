@@ -138,8 +138,11 @@ export function SettingsPage() {
     const imported = mode === "replace" ? importData(importReview.data) : importData(mergeImportData(current, importReview.data));
     setSettings(imported.settings);
     setImportReview(null);
+    const storageAfterImport = getStorageHealth();
     setMessage(getPreservedCorruptData() !== undefined
       ? "Backup loaded for this session, but browser storage could not replace the damaged workspace. The original is still preserved; download it and retry when storage is available."
+      : storageAfterImport.mode === "memory" && storageAfterImport.reason === "quota-exceeded"
+        ? "Backup loaded for this session, but browser storage is full. Export the backup and clear unused local data before retrying."
       : mode === "replace"
         ? `Backup restored: ${imported.wheels.length} wheels and ${imported.chains.length} generators.`
         : `Backup merged: ${imported.wheels.length} wheels and ${imported.chains.length} generators in your workspace.`);

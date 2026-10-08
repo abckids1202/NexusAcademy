@@ -17,7 +17,7 @@ export class StaleEditError extends Error {
 
 export type StorageHealth =
   | { mode: "persistent" }
-  | { mode: "memory"; reason: "unavailable" | "write-failed" | "corrupt" };
+  | { mode: "memory"; reason: "unavailable" | "write-failed" | "quota-exceeded" | "corrupt" };
 
 let storageHealth: StorageHealth = { mode: "persistent" };
 let memoryData: WheelForgeData | undefined;
@@ -564,7 +564,7 @@ export function loadData(): WheelForgeData {
     return memoryData ?? (memoryData = createDemoData());
   }
 
-  if (storageHealth.mode === "memory" && storageHealth.reason === "write-failed" && memoryData) {
+  if (storageHealth.mode === "memory" && (storageHealth.reason === "write-failed" || storageHealth.reason === "quota-exceeded") && memoryData) {
     return memoryData;
   }
 
@@ -636,7 +636,8 @@ function persistData(data: WheelForgeData, overwriteCorruptData = false): WheelF
       if (overwriteCorruptData) preservedCorruptData = undefined;
     } catch (error) {
       if (error instanceof StaleEditError) throw error;
-      storageHealth = { mode: "memory", reason: "write-failed" };
+      const isQuotaError = error instanceof DOMException && (error.name === "QuotaExceededError" || error.code === 22 || error.code === 1014);
+      storageHealth = { mode: "memory", reason: isQuotaError ? "quota-exceeded" : "write-failed" };
     }
   }
 

@@ -27,6 +27,7 @@
 - Tournament CSV imports detect common headers and support explicit participant-name column mapping, with legacy first-column files still supported.
 - Single-elimination setup can add a third-place match; semifinal winners route to the championship and semifinal losers route to the placement match, with correction and undo support.
 - Single-elimination setup supports best-of-1, best-of-3, and best-of-5 series. Each game is recorded independently, series scores remain pending until the win target is reached, whole-series forfeits are supported before play, and the latest game can be undone.
+- Local persistence classifies quota exhaustion separately from generic write failures and surfaces recovery guidance to export a backup and clear unused data.
 
 ## Release decision
 
@@ -40,7 +41,7 @@ WheelForge is suitable for a local beta release after a clean-clone check. It is
 4. Deploy through the documented host configuration in `vercel.json` and verify HTTPS, security headers/CSP, environment variables, and rollback using `docs/deployment-runbook.md`.
 5. Add error monitoring, uptime monitoring, backup retention, and a restore drill.
 6. Complete manual keyboard, screen-reader, mobile, Firefox, Safari, Edge, and print QA.
-7. Decide the local-data policy for large workspaces; current storage remains one `localStorage` document, with workspace revision compare-and-swap protection for concurrent writes but no record-level conflict UI.
+7. Decide the local-data policy for large workspaces; current storage remains one `localStorage` document, with workspace revision compare-and-swap protection for concurrent writes but no record-level conflict UI. Quota exhaustion is detected and surfaced, but IndexedDB migration is still required for large production workspaces.
 
 ## Known product scope
 

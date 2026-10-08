@@ -623,12 +623,12 @@ describe("configuration validation and backup imports", () => {
 
     const seeded = loadData();
     expect(seeded.wheels.length).toBeGreaterThan(0);
-    expect(getStorageHealth()).toEqual({ mode: "memory", reason: "write-failed" });
+    expect(getStorageHealth()).toEqual({ mode: "memory", reason: "quota-exceeded" });
 
     const changed = { ...seeded, wheels: [] };
     saveData(changed);
     expect(loadData().wheels).toEqual([]);
-    expect(getStorageHealth()).toEqual({ mode: "memory", reason: "write-failed" });
+    expect(getStorageHealth()).toEqual({ mode: "memory", reason: "quota-exceeded" });
   });
 
   it("does not replace unsaved in-memory changes with stale persisted data", () => {
@@ -649,7 +649,7 @@ describe("configuration validation and backup imports", () => {
     failWrites = false;
 
     expect(loadData().wheels).toEqual([]);
-    expect(getStorageHealth()).toEqual({ mode: "memory", reason: "write-failed" });
+    expect(getStorageHealth()).toEqual({ mode: "memory", reason: "quota-exceeded" });
     saveData(loadData());
     expect(getStorageHealth()).toEqual({ mode: "persistent" });
     expect(JSON.parse(values.get(STORAGE_KEY) ?? "null").wheels).toEqual([]);
@@ -736,7 +736,7 @@ describe("configuration validation and backup imports", () => {
     storageService.resetData();
     expect(values.get(STORAGE_KEY)).toBe(raw);
     expect(storageService.getPreservedCorruptData()).toBe(raw);
-    expect(storageService.getStorageHealth()).toEqual({ mode: "memory", reason: "write-failed" });
+    expect(storageService.getStorageHealth()).toEqual({ mode: "memory", reason: "quota-exceeded" });
 
     failWrites = false;
     storageService.importData(JSON.stringify(createDemoData()));

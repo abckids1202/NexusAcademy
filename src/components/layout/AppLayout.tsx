@@ -30,6 +30,8 @@ export function AppLayout({ children, standalone = false }: PropsWithChildren & 
       ? "The saved workspace is invalid and has been preserved. Changes are temporary; download the raw data, import a valid backup, or reset it in Settings."
       : storageHealth.reason === "write-failed"
         ? "This browser could not save your latest changes. They are temporary until storage is available again."
+        : storageHealth.reason === "quota-exceeded"
+          ? "Browser storage is full. Export a backup, remove unused wheels or results, then try again. Your latest changes are temporary."
         : "Browser storage is unavailable. Changes will be lost when this page closes."
     : null;
 
