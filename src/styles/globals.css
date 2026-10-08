@@ -79,6 +79,59 @@ textarea {
   backdrop-filter: blur(18px);
 }
 
+.directory-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.search-field {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: 8px;
+}
+
+.search-field .text-field {
+  min-width: 0;
+  flex: 1;
+}
+
+.checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.participant-directory-list .project-row {
+  align-items: flex-start;
+}
+
+.directory-picker {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+}
+
+.directory-picker legend {
+  padding: 0 6px;
+  color: var(--text);
+  font-weight: 700;
+}
+
+@media (max-width: 720px) {
+  .directory-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
 .sidebar-logo {
   display: grid;
   width: 46px;

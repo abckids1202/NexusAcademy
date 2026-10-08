@@ -1,0 +1,43 @@
+import { expect, test } from "@playwright/test";
+
+test("participant directory creates, searches, edits, and archives reusable profiles", async ({ page }) => {
+  await page.goto("/participants");
+  await page.getByLabel("Name").fill("Avery Chen");
+  await page.getByLabel(/Email/).fill("avery@example.com");
+  await page.getByLabel(/Group or team/).fill("Blue team");
+  await page.getByRole("button", { name: "Add participant" }).click();
+
+  await expect(page.getByRole("status")).toContainText("Participant added");
+  await expect(page.getByText("Avery Chen")).toBeVisible();
+  await expect(page.getByText("Blue team · avery@example.com · Active")).toBeVisible();
+
+  await page.getByPlaceholder("Search name, group, or notes").fill("avery");
+  await expect(page.locator(".participant-directory-list .project-row")).toHaveCount(1);
+  await page.getByRole("button", { name: "Edit Avery Chen" }).click();
+  await page.getByLabel("Name").fill("Avery Rivera");
+  await page.getByRole("button", { name: "Save participant" }).click();
+  await expect(page.getByText("Avery Rivera", { exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: "Archive Avery Rivera" }).click();
+  await expect(page.locator(".participant-directory-list .project-row")).toHaveCount(0);
+  await page.getByLabel("Show archived").check();
+  await expect(page.getByText("Avery Rivera", { exact: true })).toBeVisible();
+  await expect(page.getByText(/Archived/)).toBeVisible();
+});
+
+test("tournament creation can add active directory participants", async ({ page }) => {
+  await page.goto("/participants");
+  await page.getByLabel("Name").fill("Jordan Lee");
+  await page.getByRole("button", { name: "Add participant" }).click();
+  await page.getByLabel("Name").fill("Sam Ortiz");
+  await page.getByRole("button", { name: "Add participant" }).click();
+
+  await page.goto("/tournaments");
+  await page.getByLabel("Saved participants").selectOption({ label: "Jordan Lee" });
+  await page.getByRole("button", { name: "Add selected participants" }).click();
+  await expect(page.getByLabel(/Participants/)).toHaveValue("Jordan Lee");
+  await expect(page.getByRole("button", { name: "Preview tournament" })).toBeDisabled();
+  await page.getByLabel("Saved participants").selectOption({ label: "Sam Ortiz" });
+  await page.getByRole("button", { name: "Add selected participants" }).click();
+  await expect(page.getByLabel(/Participants/)).toHaveValue("Jordan Lee\nSam Ortiz");
+});

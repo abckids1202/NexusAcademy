@@ -10,6 +10,7 @@ import { MAX_ROUND_ROBIN_PARTICIPANTS, MAX_TOURNAMENT_PARTICIPANTS, getTournamen
 import { parseParticipantNames } from "../utils/participantImport";
 import { parseParticipantCsv, type CsvParticipantPreview } from "../utils/csvImport";
 import { defaultRoundRobinScoring } from "../data/tournamentDefaults";
+import { useParticipants } from "../hooks/useParticipants";
 
 function describePreviewMatch(tournament: Tournament, roundIndex: number, matchIndex: number, match: TournamentMatch): string {
   const participants = new Map(tournament.participants.map((participant) => [participant.id, participant.name]));
@@ -36,11 +37,13 @@ export function TournamentsPage() {
   const navigate = useNavigate();
   const [title, setTitle] = useState("");
   const [participantText, setParticipantText] = useState("");
+  const [selectedParticipantIds, setSelectedParticipantIds] = useState<string[]>([]);
   const [seeding, setSeeding] = useState<TournamentSeeding>("entry-order");
   const [format, setFormat] = useState<TournamentFormat>("single-elimination");
   const [roundRobinTiebreaker, setRoundRobinTiebreaker] = useState<RoundRobinTiebreaker>("seed");
   const [scoring, setScoring] = useState<RoundRobinScoring>(() => ({ ...defaultRoundRobinScoring }));
   const tournaments = useTournaments();
+  const directoryParticipants = useParticipants(false);
   const [preview, setPreview] = useState<Tournament | null>(null);
   const [participantCsvPreview, setParticipantCsvPreview] = useState<CsvParticipantPreview | null>(null);
   const [error, setError] = useState("");
@@ -74,6 +77,16 @@ export function TournamentsPage() {
     setParticipantText(names.join("\n"));
     setParticipantCsvPreview(null);
     setError("");
+  }
+
+  function addDirectoryParticipants() {
+    const names = directoryParticipants
+      .filter((participant) => selectedParticipantIds.includes(participant.id))
+      .map((participant) => participant.name);
+    if (names.length === 0) return;
+    setParticipantText((current) => parseParticipantNames(`${current}\n${names.join("\n")}`).names.join("\n"));
+    setSelectedParticipantIds([]);
+    invalidatePreview();
   }
 
   function handlePreview(event: React.FormEvent<HTMLFormElement>) {
@@ -120,6 +133,11 @@ export function TournamentsPage() {
             <span>Participants · {parsedParticipants.names.length} of {participantLimit}</span>
             <textarea className="text-field participant-entry" value={participantText} onChange={(event) => { invalidatePreview(); setParticipantText(event.target.value); }} placeholder={'Avery\nJordan\nSam\nTaylor'} rows={8} />
           </label>
+          {directoryParticipants.length > 0 && <fieldset className="directory-picker">
+            <legend>Reuse participant directory</legend>
+            <label className="field-stack"><span>Select saved participants</span><select className="select-field" multiple size={Math.min(5, directoryParticipants.length)} aria-label="Saved participants" value={selectedParticipantIds} onChange={(event) => setSelectedParticipantIds(Array.from(event.target.selectedOptions, (option) => option.value))}>{directoryParticipants.map((participant) => <option key={participant.id} value={participant.id}>{participant.name}{participant.group ? ` · ${participant.group}` : ""}</option>)}</select></label>
+            <button className="secondary-link" type="button" disabled={selectedParticipantIds.length === 0} onClick={addDirectoryParticipants}>Add selected participants</button>
+          </fieldset>}
           <label className="secondary-link file-button"><Upload size={16} /> Preview participant CSV<input type="file" accept=".csv,text/csv" onChange={(event) => { void previewParticipantsCsv(event.target.files?.[0]); event.currentTarget.value = ""; }} /></label>
           {participantCsvPreview && <section className="csv-option-preview" aria-label="Participant CSV preview">
             <p><strong>{participantCsvPreview.names.length} unique participants</strong>{participantCsvPreview.errors.length > 0 ? ` · ${participantCsvPreview.errors.length} rows need attention` : ""}{participantCsvPreview.blankRows > 0 ? ` · ${participantCsvPreview.blankRows} blank rows skipped` : ""}</p>

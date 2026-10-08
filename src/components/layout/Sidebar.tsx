@@ -7,6 +7,7 @@ import {
   Settings,
   Sparkles,
   Trophy,
+  Users,
   Wand2,
 } from "lucide-react";
 import { WheelForgeMark } from "../common/WheelForgeMark";
@@ -18,6 +19,7 @@ const navItems = [
   { to: "/spin", label: "Spin", icon: Sparkles },
   { to: "/chains/new", label: "Chains", icon: Route },
   { to: "/tournaments", label: "Tournaments", icon: Trophy },
+  { to: "/participants", label: "Participants", icon: Users },
   { to: "/templates", label: "Templates", icon: Layers3 },
   { to: "/settings", label: "Settings", icon: Settings },
 ];

@@ -4,6 +4,7 @@ import type { UserSettings } from "./settings";
 import type { Wheel } from "./wheel";
 import type { Tournament } from "./tournament";
 import type { TemplatePack, UserTemplate } from "./templates";
+import type { ParticipantProfile } from "./participant";
 
 export type WheelForgeData = {
   version: 1;
@@ -12,6 +13,7 @@ export type WheelForgeData = {
   spinResults: SpinResult[];
   chainSessions: ChainSession[];
   tournaments: Tournament[];
+  participants: ParticipantProfile[];
   favoriteTemplateIds: string[];
   recentTemplateIds: string[];
   userTemplates: UserTemplate[];

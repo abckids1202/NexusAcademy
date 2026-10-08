@@ -71,6 +71,7 @@ export function createEmptyData(): WheelForgeData {
     spinResults: [],
     chainSessions: [],
     tournaments: [],
+    participants: [],
     favoriteTemplateIds: [],
     recentTemplateIds: [],
     userTemplates: [],
@@ -121,6 +122,7 @@ function normalizeData(value: unknown): WheelForgeData {
           } as WheelForgeData["tournaments"][number];
         })
       : [],
+    participants: Array.isArray(data.participants) ? data.participants : [],
     favoriteTemplateIds: Array.isArray(data.favoriteTemplateIds)
       ? data.favoriteTemplateIds.filter((id): id is string => typeof id === "string")
       : [],
@@ -478,6 +480,14 @@ function isValidTournament(value: unknown): boolean {
   return validParticipants && validRounds;
 }
 
+function isValidParticipantProfile(value: unknown): boolean {
+  return isRecord(value) && typeof value.id === "string" && value.id.length > 0 &&
+    typeof value.name === "string" && value.name.trim().length > 0 &&
+    hasOptionalString(value, "email") && hasOptionalString(value, "group") && hasOptionalString(value, "notes") &&
+    isOneOf(value.status, ["active", "archived"] as const) &&
+    typeof value.createdAt === "string" && typeof value.updatedAt === "string";
+}
+
 function isValidSettings(value: Record<string, unknown>): boolean {
   const validTheme = value.theme === undefined || isOneOf(value.theme, ["dark", "light", "system"] as const);
   const validVisualMode = value.defaultVisualMode === undefined || isOneOf(value.defaultVisualMode, ["equal", "weighted"] as const);
@@ -510,6 +520,7 @@ function isValidImport(value: unknown): value is WheelForgeData {
   if (!Array.isArray(value.wheels) || !Array.isArray(value.chains) ||
     !Array.isArray(value.spinResults) || !Array.isArray(value.chainSessions) ||
     (value.tournaments !== undefined && !Array.isArray(value.tournaments)) ||
+    (value.participants !== undefined && (!Array.isArray(value.participants) || !value.participants.every(isValidParticipantProfile))) ||
     (value.favoriteTemplateIds !== undefined && (!Array.isArray(value.favoriteTemplateIds) ||
       !value.favoriteTemplateIds.every((id) => typeof id === "string"))) ||
     (value.recentTemplateIds !== undefined && (!Array.isArray(value.recentTemplateIds) ||
@@ -528,6 +539,7 @@ function isValidImport(value: unknown): value is WheelForgeData {
     value.spinResults.every(isValidSpinResult) && isValidWinnerDrawGroups(value.spinResults) &&
     value.chainSessions.every(isValidChainSession) &&
     (value.tournaments === undefined || value.tournaments.every(isValidTournament)) &&
+    (value.participants === undefined || value.participants.every(isValidParticipantProfile)) &&
     isValidSettings(value.settings);
 }
 
@@ -637,13 +649,13 @@ export function parseImportData(json: string): WheelForgeData {
 }
 
 export type ImportReviewSummary = {
-  counts: Record<"wheels" | "chains" | "spinResults" | "chainSessions" | "tournaments" | "userTemplates" | "userTemplatePacks", { current: number; incoming: number; new: number }>;
+  counts: Record<"wheels" | "chains" | "spinResults" | "chainSessions" | "tournaments" | "participants" | "userTemplates" | "userTemplatePacks", { current: number; incoming: number; new: number }>;
   idConflicts: number;
 };
 
 export function getImportReviewSummary(current: WheelForgeData, input: string | WheelForgeData): ImportReviewSummary {
   const incoming = typeof input === "string" ? parseImportData(input) : parseImportData(JSON.stringify(input));
-  const keys = ["wheels", "chains", "spinResults", "chainSessions", "tournaments", "userTemplates", "userTemplatePacks"] as const;
+  const keys = ["wheels", "chains", "spinResults", "chainSessions", "tournaments", "participants", "userTemplates", "userTemplatePacks"] as const;
   const counts = Object.fromEntries(keys.map((key) => {
     const currentIds = new Set(current[key].map((item) => item.id));
     const incomingIds = new Set(incoming[key].map((item) => item.id));
@@ -676,6 +688,7 @@ export function mergeImportData(current: WheelForgeData, input: string | WheelFo
     spinResults: mergeById(normalizedCurrent.spinResults, incoming.spinResults),
     chainSessions: mergeById(normalizedCurrent.chainSessions, incoming.chainSessions),
     tournaments: mergeById(normalizedCurrent.tournaments, incoming.tournaments),
+    participants: mergeById(normalizedCurrent.participants, incoming.participants),
     userTemplates: mergeById(normalizedCurrent.userTemplates, incoming.userTemplates),
     userTemplatePacks: mergeById(normalizedCurrent.userTemplatePacks, incoming.userTemplatePacks),
     favoriteTemplateIds: [...new Set([...normalizedCurrent.favoriteTemplateIds, ...incoming.favoriteTemplateIds])],

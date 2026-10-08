@@ -82,6 +82,13 @@ export const router = createBrowserRouter([
         },
       },
       {
+        path: "participants",
+        lazy: async () => {
+          const { ParticipantsPage } = await import("./pages/ParticipantsPage");
+          return { Component: ParticipantsPage };
+        },
+      },
+      {
         path: "tournaments/:tournamentId/host",
         lazy: async () => {
           const { TournamentHostPage } = await import("./pages/TournamentHostPage");

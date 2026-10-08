@@ -112,6 +112,7 @@ export function createDemoData(): WheelForgeData {
     spinResults: [],
     chainSessions: [],
     tournaments: [],
+    participants: [],
     favoriteTemplateIds: [],
     recentTemplateIds: [],
     userTemplates: [],
