@@ -387,6 +387,7 @@ async function createTournament(
   await expect(page.getByRole("region", { name: "Tournament preview" })).toBeVisible();
   await page.getByRole("button", { name: "Create this tournament" }).click();
   await expect(page.getByRole("heading", { name: title })).toBeVisible();
+  await expect(page).toHaveURL(/\/tournaments\/tournament_/);
 }
 
 test("tournament preview shows round-robin byes and creates the exact reviewed random schedule", async ({ page }) => {
