@@ -66,6 +66,7 @@ export function getPreservedCorruptData(): string | undefined {
 export function createEmptyData(): WheelForgeData {
   return {
     version: 1,
+    revision: 0,
     wheels: [],
     chains: [],
     spinResults: [],
@@ -99,6 +100,7 @@ function normalizeData(value: unknown): WheelForgeData {
 
   return {
     version: 1,
+    revision: typeof data.revision === "number" && Number.isInteger(data.revision) && data.revision >= 0 ? data.revision : 0,
     wheels: Array.isArray(data.wheels) ? data.wheels : [],
     chains: Array.isArray(data.chains) ? data.chains : [],
     spinResults: Array.isArray(data.spinResults) ? data.spinResults : [],
@@ -525,6 +527,7 @@ function isValidTemplatePack(value: unknown): boolean {
 
 function isValidImport(value: unknown): value is WheelForgeData {
   if (!isRecord(value) || value.version !== 1) return false;
+  if (value.revision !== undefined && (typeof value.revision !== "number" || !Number.isInteger(value.revision) || value.revision < 0)) return false;
   if (!Array.isArray(value.wheels) || !Array.isArray(value.chains) ||
     !Array.isArray(value.spinResults) || !Array.isArray(value.chainSessions) ||
     (value.tournaments !== undefined && !Array.isArray(value.tournaments)) ||
@@ -611,16 +614,31 @@ function persistData(data: WheelForgeData, overwriteCorruptData = false): WheelF
     // Preserve the unreadable backup until the user imports or explicitly resets data.
   } else {
     try {
-      storage.setItem(STORAGE_KEY, JSON.stringify(normalizedData));
+      const rawCurrent = storage.getItem(STORAGE_KEY);
+      let currentRevision = 0;
+      if (rawCurrent !== null) {
+        let current: unknown;
+        try { current = JSON.parse(rawCurrent); } catch { current = undefined; }
+        if (isRecord(current) && current.version === 1 && typeof current.revision === "number" && Number.isInteger(current.revision) && current.revision >= 0) {
+          currentRevision = current.revision;
+          if (!overwriteCorruptData && normalizedData.revision > 0 && currentRevision !== normalizedData.revision) {
+            throw new StaleEditError("workspace");
+          }
+        }
+      }
+      const nextData = { ...normalizedData, revision: currentRevision + 1 };
+      storage.setItem(STORAGE_KEY, JSON.stringify(nextData));
+      memoryData = nextData;
       storageHealth = { mode: "persistent" };
       if (overwriteCorruptData) preservedCorruptData = undefined;
-    } catch {
+    } catch (error) {
+      if (error instanceof StaleEditError) throw error;
       storageHealth = { mode: "memory", reason: "write-failed" };
     }
   }
 
   notifyDataChanged();
-  return normalizedData;
+  return memoryData ?? normalizedData;
 }
 
 export function saveData(data: WheelForgeData): WheelForgeData {

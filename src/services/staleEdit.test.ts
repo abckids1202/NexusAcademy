@@ -40,6 +40,14 @@ describe("stale edit protection", () => {
     expect(loadData().chains.find((chain) => chain.id === original.id)?.title).toBe("Changed in another tab");
   });
 
+  it("rejects a stale workspace write before it can overwrite another tab", () => {
+    const snapshot = loadData();
+    saveData({ ...snapshot, settings: { ...snapshot.settings, theme: "light" } });
+
+    expect(() => saveData({ ...snapshot, settings: { ...snapshot.settings, theme: "dark" } })).toThrow(StaleEditError);
+    expect(loadData().settings.theme).toBe("light");
+  });
+
   it("rejects stale tournament setup and merges independent preference changes", () => {
     const tournament = createTournament("Local Cup", ["Avery", "Jordan"]);
     const saved = loadData().tournaments.find((item) => item.id === tournament.id)!;

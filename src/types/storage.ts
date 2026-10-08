@@ -8,6 +8,7 @@ import type { ParticipantProfile } from "./participant";
 
 export type WheelForgeData = {
   version: 1;
+  revision: number;
   wheels: Wheel[];
   chains: SpinChain[];
   spinResults: SpinResult[];

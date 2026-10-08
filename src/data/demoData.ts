@@ -100,6 +100,7 @@ export function createDemoData(): WheelForgeData {
 
   return {
     version: 1,
+    revision: 0,
     wheels: [
       foodWheel,
       giveawayWheel,

@@ -5,7 +5,7 @@
 ## Verified in the current checkout
 
 - `npm run lint` passes.
-- `npm test -- --run` passes with 119 tests across 10 source test files.
+- `npm test -- --run` passes with 120 tests across 10 source test files.
 - `npm run audit` passes with no high or critical advisories.
 - `npm run build` passes.
 - `npm run test:e2e` passes with 44 Chromium journeys.
@@ -16,6 +16,7 @@
 - A shared local participant directory supports profile CRUD, archive/restore, search, backup persistence, tournament roster reuse, and group metadata carried into reviewed brackets.
 - Tournament setup supports per-participant group/team labels, roles, seat numbers, random seat assignment, manual seed ordering, and metadata-preserving setup edits.
 - Roster preparation can distribute participants across a chosen number of balanced, randomized team labels while preserving the reviewed assignment.
+- Workspace writes carry a monotonic revision and compare-and-swap guard, so a stale tab write fails instead of silently replacing a newer workspace. Record-level conflict resolution and IndexedDB migration remain future work.
 - Tournament setup supports automatic or host-confirmed bye policies; manual byes remain pending, are confirmed from host/detail views, advance the bracket, and are recorded in activity history.
 - Tournament participant withdrawal supports an explicit reviewed policy: advance opponents through affected pending fixtures or preserve pending fixtures. Withdrawals persist, update attendance, and appear in activity history.
 - Tournament CSV imports detect common headers and support explicit participant-name column mapping, with legacy first-column files still supported.
@@ -32,7 +33,7 @@ WheelForge is suitable for a local beta release after a clean-clone check. It is
 4. Deploy through the documented host configuration in `vercel.json` and verify HTTPS, security headers/CSP, environment variables, and rollback using `docs/deployment-runbook.md`.
 5. Add error monitoring, uptime monitoring, backup retention, and a restore drill.
 6. Complete manual keyboard, screen-reader, mobile, Firefox, Safari, Edge, and print QA.
-7. Decide the local-data policy for large workspaces and concurrent tabs; current storage remains one optimistic `localStorage` document.
+7. Decide the local-data policy for large workspaces; current storage remains one `localStorage` document, with workspace revision compare-and-swap protection for concurrent writes but no record-level conflict UI.
 
 ## Known product scope
 
