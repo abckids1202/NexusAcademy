@@ -63,6 +63,23 @@ function snapshotSelection(data: ReturnType<typeof loadData>, wheelIds: string[]
   return { wheels: wheelTemplates, chains: chainTemplates };
 }
 
+function preservePackComponentIds(existing: TemplatePack, selection: Pick<TemplatePack, "wheels" | "chains">): Pick<TemplatePack, "wheels" | "chains"> {
+  const existingWheelsByTitle = new Map(existing.wheels.map((wheel) => [wheel.title, wheel.id]));
+  const wheelIdMap = new Map<string, string>();
+  const wheels = selection.wheels.map((wheel) => {
+    const id = existingWheelsByTitle.get(wheel.title) ?? wheel.id;
+    wheelIdMap.set(wheel.id, id);
+    return { ...wheel, id };
+  });
+  const existingChainsByTitle = new Map(existing.chains.map((chain) => [chain.title, chain.id]));
+  const chains = selection.chains.map((chain) => ({
+    ...chain,
+    id: existingChainsByTitle.get(chain.title) ?? chain.id,
+    steps: chain.steps.map((step) => ({ ...step, wheelTemplateId: wheelIdMap.get(step.wheelTemplateId) ?? step.wheelTemplateId })),
+  }));
+  return { wheels, chains };
+}
+
 function namesById(items: Array<{ id: string; title: string }>): Map<string, string> {
   return new Map(items.map((item) => [item.id, item.title]));
 }
@@ -156,7 +173,7 @@ export function updateTemplatePackFromSelection(packId: string, wheelIds: string
   const data = loadData();
   const existing = data.userTemplatePacks.find((pack) => pack.id === packId);
   if (!existing) return undefined;
-  const selection = snapshotSelection(data, wheelIds, chainIds);
+  const selection = preservePackComponentIds(existing, snapshotSelection(data, wheelIds, chainIds));
   const nextVersion = existing.version + 1;
   const updated: TemplatePack = {
     ...existing,
