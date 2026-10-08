@@ -25,7 +25,16 @@ npm run test:e2e
 npm run check
 ```
 
-`npm run check` runs lint, unit tests, the production build, and browser tests. The browser suite starts its own Vite server on port 5199.
+`npm run check` runs lint, unit tests, the dependency audit, the production build, Chromium browser tests, and cloud-mock tests. The browser suite starts its own Vite server on port 5199. GitHub Actions additionally runs the Firefox/WebKit smoke suite and uploads Playwright artifacts.
+
+To run the cross-browser smoke suite locally:
+
+```bash
+npx playwright install chromium firefox webkit
+npm run test:e2e:cross-browser
+```
+
+On Windows, Playwright Firefox may fail to launch with `spawn UNKNOWN`; the CI Ubuntu runner is the authoritative Firefox check when that host limitation occurs.
 
 ## Optional Cloud Backup
 
