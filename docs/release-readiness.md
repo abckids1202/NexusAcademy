@@ -8,8 +8,10 @@
 - `npm test -- --run` passes with 128 tests across 11 source test files.
 - `npm run audit` passes with no high or critical advisories.
 - `npm run build` passes.
-- `npm run test:e2e` passes with 47 Chromium journeys.
+- `npm run test:e2e` passes with 50 Chromium journeys.
 - `npm run test:e2e:cloud` passes with 2 mocked cloud journeys.
+- `npm run test:e2e:cross-browser` provides 3 Firefox and 3 WebKit smoke journeys in CI for routing, the shell, templates, and tournament setup; full feature coverage remains Chromium-based.
+- Local Windows verification currently passes WebKit smoke tests; Playwright Firefox cannot launch in this environment (`spawn UNKNOWN`), so Firefox evidence must come from the Ubuntu CI runner or a manual Firefox session.
 - Vitest is scoped to `src/**/*.test.ts`; legacy repository tests cannot silently contaminate the WheelForge gate.
 - GitHub Actions runs lint, unit tests, audit, build, Chromium browser tests, cloud-mock tests, and uploads Playwright artifacts on failure.
 - Page routes are lazy-loaded; the main JavaScript chunk is approximately 351 kB minified instead of the previous 515 kB.

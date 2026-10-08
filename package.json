@@ -12,6 +12,7 @@
     "audit": "npm audit --audit-level=high",
     "test:e2e": "playwright test",
     "test:e2e:cloud": "playwright test --config playwright.cloud.config.ts",
+    "test:e2e:cross-browser": "playwright test --config playwright.cross-browser.config.ts",
     "test:e2e:install": "playwright install chromium",
     "check": "npm run lint && npm test && npm run audit && npm run build && npm run test:e2e && npm run test:e2e:cloud"
   },

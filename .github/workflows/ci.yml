@@ -12,7 +12,7 @@ permissions:
 jobs:
   quality:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -39,13 +39,16 @@ jobs:
         run: npm audit --audit-level=high
 
       - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium firefox webkit
 
       - name: Browser tests
         run: npm run test:e2e
 
       - name: Cloud mock browser tests
         run: npm run test:e2e:cloud
+
+      - name: Firefox and WebKit smoke tests
+        run: npm run test:e2e:cross-browser
 
       - name: Upload Playwright artifacts
         if: failure()
