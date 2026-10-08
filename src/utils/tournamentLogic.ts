@@ -14,6 +14,10 @@ import type {
   TournamentWithdrawalPolicy,
   TournamentWinnerDraw,
   TournamentBestOf,
+  TournamentBracket,
+  TournamentMatchSlot,
+  TournamentMatch,
+  TournamentMatchStatus,
 } from "../types";
 import { createId } from "./ids";
 import { randomInteger } from "./random";
@@ -119,7 +123,7 @@ function createTournamentBase(
     byePolicy: prepared.options.byePolicy ?? "automatic",
     withdrawalPolicy: prepared.options.withdrawalPolicy ?? "advance-opponent",
     thirdPlaceMatch: prepared.options.thirdPlaceMatch ?? false,
-    bestOf: format === "single-elimination" ? prepared.options.bestOf ?? 1 : 1,
+    bestOf: format === "single-elimination" || format === "double-elimination" ? prepared.options.bestOf ?? 1 : 1,
     status: "in_progress",
     participants: prepared.participants,
     rounds,
@@ -377,6 +381,136 @@ export function createSingleEliminationTournament(
   return createTournamentBase(prepared, "single-elimination", rounds);
 }
 
+function setDoubleBracketSlot(rounds: TournamentRound[], matchId: string, slot: TournamentMatchSlot, participantId: string): void {
+  const destination = rounds.flatMap((round) => round.matches).find((match) => match.id === matchId);
+  if (!destination) throw new Error("Double-elimination bracket routing is invalid.");
+  if (slot === "A") destination.participantAId = participantId;
+  else destination.participantBId = participantId;
+  if (destination.status === "locked") destination.status = "pending";
+}
+
+function routeDoubleBracketParticipant(
+  rounds: TournamentRound[],
+  match: TournamentMatch,
+  participantId: string,
+  outcome: "winner" | "loser",
+): void {
+  const nextMatchId = outcome === "winner" ? match.winnerNextMatchId : match.loserNextMatchId;
+  const nextSlot = outcome === "winner" ? match.winnerNextSlot : match.loserNextSlot;
+  if (nextMatchId && nextSlot) setDoubleBracketSlot(rounds, nextMatchId, nextSlot, participantId);
+}
+
+export function createDoubleEliminationTournament(
+  title: string,
+  entrants: Array<Pick<TournamentParticipant, "id" | "name">>,
+  options: TournamentOptions = {},
+): Tournament {
+  const prepared = prepareTournament(title, entrants, options);
+  if (entrants.length < 4) throw new Error("A double-elimination tournament requires at least four participants.");
+  if (entrants.length > 64) throw new Error("Double elimination currently supports up to 64 participants.");
+
+  const bracketSize = 2 ** Math.ceil(Math.log2(prepared.participants.length));
+  const winnersRounds = Math.log2(bracketSize);
+  const rounds: TournamentRound[] = [];
+  const makeMatch = (bracket: TournamentBracket, bracketRound: number, matchNumber: number, status: TournamentMatchStatus = "pending"): TournamentMatch => ({
+    id: prepared.makeId("match"),
+    matchNumber,
+    status,
+    bracket,
+    bracketRound,
+  });
+
+  for (let round = 1; round <= winnersRounds; round += 1) {
+    const matches = Array.from({ length: bracketSize / (2 ** round) }, (_, index) => makeMatch("winners", round, index + 1));
+    rounds.push({ roundNumber: round, label: `Winners Round ${round}`, matches });
+  }
+
+  const losersStart = rounds.length;
+  const losersMatchCounts: number[] = [];
+  for (let round = 1; round <= winnersRounds - 1; round += 1) {
+    const count = bracketSize / (2 ** (round + 1));
+    losersMatchCounts.push(count, count);
+  }
+  losersMatchCounts.forEach((count, index) => {
+    rounds.push({ roundNumber: losersStart + index + 1, label: `Losers Round ${index + 1}`, matches: Array.from({ length: count }, (_, matchIndex) => makeMatch("losers", index + 1, matchIndex + 1)) });
+  });
+
+  const grandFinalRoundNumber = rounds.length + 1;
+  const grandFinal = makeMatch("grand-final", 1, 1);
+  const resetMatch = makeMatch("grand-final", 2, 1, "locked");
+  resetMatch.isGrandFinalReset = true;
+  rounds.push({ roundNumber: grandFinalRoundNumber, label: "Grand Final", matches: [grandFinal, resetMatch] });
+
+  const winnerRounds = rounds.slice(0, winnersRounds);
+  const loserRounds = rounds.slice(losersStart, losersStart + losersMatchCounts.length);
+  const grandFinalRound = rounds.at(-1)!;
+  const finalMatch = grandFinalRound.matches[0];
+  const resetId = grandFinalRound.matches[1].id;
+
+  for (let round = 0; round < winnersRounds; round += 1) {
+    const sourceMatches = winnerRounds[round].matches;
+    sourceMatches.forEach((match, index) => {
+      if (round < winnersRounds - 1) {
+        const destination = winnerRounds[round + 1].matches[Math.floor(index / 2)];
+        match.winnerNextMatchId = destination.id;
+        match.winnerNextSlot = index % 2 === 0 ? "A" : "B";
+        if (round === 0) {
+          const loserDestination = loserRounds[0].matches[Math.floor(index / 2)];
+          match.loserNextMatchId = loserDestination.id;
+          match.loserNextSlot = index % 2 === 0 ? "A" : "B";
+        } else {
+          const loserDestination = loserRounds[round * 2 - 1].matches[index];
+          match.loserNextMatchId = loserDestination.id;
+          match.loserNextSlot = "B";
+        }
+      } else {
+        match.winnerNextMatchId = finalMatch.id;
+        match.winnerNextSlot = "A";
+        const loserDestination = loserRounds[loserRounds.length - 1].matches[0];
+        match.loserNextMatchId = loserDestination.id;
+        match.loserNextSlot = "B";
+      }
+    });
+  }
+
+  loserRounds.forEach((round, index) => round.matches.forEach((match, matchIndex) => {
+    if (index === loserRounds.length - 1) {
+      match.winnerNextMatchId = finalMatch.id;
+      match.winnerNextSlot = "B";
+    } else if (index % 2 === 0) {
+      const destination = loserRounds[index + 1].matches[matchIndex];
+      match.winnerNextMatchId = destination.id;
+      match.winnerNextSlot = "A";
+    } else {
+      const destination = loserRounds[index + 1].matches[Math.floor(matchIndex / 2)];
+      match.winnerNextMatchId = destination.id;
+      match.winnerNextSlot = matchIndex % 2 === 0 ? "A" : "B";
+    }
+  }));
+
+  const seedOrder = getSeedOrder(bracketSize);
+  const participantBySeed = new Map(prepared.participants.map((participant) => [participant.seed, participant]));
+  winnerRounds[0].matches.forEach((match, index) => {
+    match.participantAId = participantBySeed.get(seedOrder[index * 2])?.id;
+    match.participantBId = participantBySeed.get(seedOrder[index * 2 + 1])?.id;
+  });
+
+  for (const match of winnerRounds[0].matches) {
+    const participantIds = [match.participantAId, match.participantBId].filter((id): id is string => Boolean(id));
+    if (participantIds.length !== 1 || (prepared.options.byePolicy ?? "automatic") !== "automatic") continue;
+    match.status = "bye";
+    match.winnerId = participantIds[0];
+    routeDoubleBracketParticipant(rounds, match, participantIds[0], "winner");
+  }
+
+  return {
+    ...createTournamentBase(prepared, "double-elimination", rounds),
+    grandFinalMatchId: finalMatch.id,
+    grandFinalResetMatchId: resetId,
+    thirdPlaceMatch: false,
+  };
+}
+
 export function createRoundRobinTournament(
   title: string,
   entrants: Array<Pick<TournamentParticipant, "id" | "name">>,
@@ -493,7 +627,9 @@ export function updateTournamentSetup(
   };
   const updated = format === "round-robin"
     ? createRoundRobinTournament(title, entrants, createOptions)
-    : createSingleEliminationTournament(title, entrants, createOptions);
+    : format === "double-elimination"
+      ? createDoubleEliminationTournament(title, entrants, createOptions)
+      : createSingleEliminationTournament(title, entrants, createOptions);
   return {
     ...updated,
     updatedAt: new Date().toISOString(),
@@ -502,6 +638,17 @@ export function updateTournamentSetup(
 }
 
 export const MAX_ROUND_ROBIN_PARTICIPANTS = 32;
+export const MAX_DOUBLE_ELIMINATION_PARTICIPANTS = 64;
+
+function isDoubleEliminationComplete(rounds: TournamentRound[], tournament: Tournament): boolean {
+  const grandFinal = tournament.grandFinalMatchId
+    ? rounds.flatMap((round) => round.matches).find((match) => match.id === tournament.grandFinalMatchId)
+    : undefined;
+  const reset = tournament.grandFinalResetMatchId
+    ? rounds.flatMap((round) => round.matches).find((match) => match.id === tournament.grandFinalResetMatchId)
+    : undefined;
+  return grandFinal?.status === "complete" && (grandFinal.winnerId === grandFinal.participantAId || reset?.status === "complete");
+}
 
 export function recordTournamentWinner(
   tournament: Tournament,
@@ -522,7 +669,7 @@ export function recordTournamentWinner(
     throw new Error("The winner must be one of the participants in this match.");
   }
 
-  const seriesBestOf = tournament.format === "single-elimination" ? tournament.bestOf ?? 1 : 1;
+  const seriesBestOf = tournament.format === "single-elimination" || tournament.format === "double-elimination" ? tournament.bestOf ?? 1 : 1;
   const seriesTarget = Math.ceil(seriesBestOf / 2);
   const seriesGames = [...(match.seriesGames ?? [])];
   if (seriesBestOf > 1) {
@@ -555,6 +702,45 @@ export function recordTournamentWinner(
 
   if (tournament.format === "round-robin") {
     const isComplete = rounds.every((round) => round.matches.every((roundMatch) => roundMatch.status !== "pending"));
+    return {
+      ...tournament,
+      rounds,
+      ...eventUpdate,
+      status: isComplete ? "completed" : "in_progress",
+      nextResultSequence: tournament.nextResultSequence + 1,
+      updatedAt: completedAt,
+      ...(isComplete ? { completedAt } : { completedAt: undefined }),
+    };
+  }
+
+  if (tournament.format === "double-elimination") {
+    const loserId = match.participantAId === winnerId ? match.participantBId : match.participantAId;
+    if (match.isGrandFinalReset) {
+      const isComplete = true;
+      return {
+        ...tournament,
+        rounds,
+        ...eventUpdate,
+        status: isComplete ? "completed" : "in_progress",
+        nextResultSequence: tournament.nextResultSequence + 1,
+        updatedAt: completedAt,
+        completedAt,
+      };
+    }
+    if (match.bracket === "grand-final" && winnerId === match.participantBId) {
+      const reset = tournament.grandFinalResetMatchId
+        ? rounds.flatMap((round) => round.matches).find((item) => item.id === tournament.grandFinalResetMatchId)
+        : undefined;
+      if (reset) {
+        reset.status = "pending";
+        reset.participantAId = match.participantAId;
+        reset.participantBId = match.participantBId;
+      }
+    } else if (match.bracket !== "grand-final") {
+      routeDoubleBracketParticipant(rounds, match, winnerId, "winner");
+      if (loserId) routeDoubleBracketParticipant(rounds, match, loserId, "loser");
+    }
+    const isComplete = isDoubleEliminationComplete(rounds, tournament);
     return {
       ...tournament,
       rounds,
@@ -656,9 +842,12 @@ export function recordTournamentBye(
   match.winnerId = winnerId;
   match.completedAt = completedAt;
   match.resultSequence = tournament.nextResultSequence;
-  if (tournament.format !== "round-robin") advanceByeWinner(rounds, roundIndex, matchIndex, winnerId);
+  if (tournament.format === "double-elimination") routeDoubleBracketParticipant(rounds, match, winnerId, "winner");
+  else if (tournament.format !== "round-robin") advanceByeWinner(rounds, roundIndex, matchIndex, winnerId);
   const eventUpdate = appendTournamentEvent(tournament, createResultEvent("bye-confirmed", rounds[roundIndex], match, completedAt, { winnerId }));
-  const isComplete = rounds.every((round) => round.matches.every((roundMatch) => roundMatch.status !== "pending"));
+  const isComplete = tournament.format === "double-elimination"
+    ? isDoubleEliminationComplete(rounds, tournament)
+    : rounds.every((round) => round.matches.every((roundMatch) => roundMatch.status !== "pending"));
   return { ...tournament, rounds, ...eventUpdate, status: isComplete ? "completed" : "in_progress", nextResultSequence: tournament.nextResultSequence + 1, updatedAt: completedAt, ...(isComplete ? { completedAt } : { completedAt: undefined }) };
 }
 
@@ -691,7 +880,8 @@ export function withdrawTournamentParticipant(
       if (match.participantAId === participantId) delete match.participantAId;
       if (match.participantBId === participantId) delete match.participantBId;
       match.completedAt = withdrawnAt;
-      if (tournament.format !== "round-robin") advanceByeWinner(rounds, roundIndex, matchIndex, opponentId);
+      if (tournament.format === "double-elimination") routeDoubleBracketParticipant(rounds, match, opponentId, "winner");
+      else if (tournament.format !== "round-robin") advanceByeWinner(rounds, roundIndex, matchIndex, opponentId);
     }));
   }
   const eventUpdate = appendTournamentEvent(tournament, {
@@ -893,6 +1083,9 @@ export function correctTournamentWinner(
   winnerId: string,
   correctedAt = new Date().toISOString(),
 ): Tournament {
+  if (tournament.format === "double-elimination") {
+    throw new Error("Double-elimination results can currently be corrected by undoing results back to this match, then recording the new winners.");
+  }
   const rounds = tournament.rounds.map((round) => ({
     ...round,
     matches: round.matches.map((match) => ({ ...match })),
@@ -1037,7 +1230,10 @@ export function undoLastTournamentResult(
   const previousForfeitingParticipantId = match.forfeitingParticipantId;
   const previousSeriesGame = match.seriesGames?.at(-1);
   if ((tournament.bestOf ?? 1) > 1 && previousSeriesGame) {
-    if (match.status === "complete" && match.winnerId) removeAdvancedWinner(rounds, latest.roundIndex, latest.matchIndex, match.winnerId);
+    if (match.status === "complete" && match.winnerId) {
+      if (tournament.format === "double-elimination") clearDoubleBracketRoutes(rounds, match, match.winnerId, match.participantAId === match.winnerId ? match.participantBId : match.participantAId);
+      else removeAdvancedWinner(rounds, latest.roundIndex, latest.matchIndex, match.winnerId);
+    }
     match.seriesGames = match.seriesGames?.slice(0, -1) ?? [];
     match.seriesWinsA = match.seriesGames.filter((game) => game.winnerId === match.participantAId).length;
     match.seriesWinsB = match.seriesGames.filter((game) => game.winnerId === match.participantBId).length;
@@ -1053,7 +1249,16 @@ export function undoLastTournamentResult(
     ));
     return { ...tournament, rounds, ...eventUpdate, status: "in_progress", nextResultSequence: latest.sequence, updatedAt, completedAt: undefined };
   }
-  if (tournament.format !== "round-robin" && match.winnerId) {
+  if (tournament.format === "double-elimination" && match.winnerId) {
+    clearDoubleBracketRoutes(rounds, match, match.winnerId, match.participantAId === match.winnerId ? match.participantBId : match.participantAId);
+    if (match.isGrandFinalReset) {
+      const grandFinal = tournament.grandFinalMatchId ? rounds.flatMap((round) => round.matches).find((item) => item.id === tournament.grandFinalMatchId) : undefined;
+      if (grandFinal?.status === "complete" && grandFinal.winnerId === grandFinal.participantBId) {
+        const reset = tournament.grandFinalResetMatchId ? rounds.flatMap((round) => round.matches).find((item) => item.id === tournament.grandFinalResetMatchId) : undefined;
+        if (reset) { reset.status = "locked"; delete reset.participantAId; delete reset.participantBId; }
+      }
+    }
+  } else if (tournament.format !== "round-robin" && match.winnerId) {
     removeAdvancedWinner(rounds, latest.roundIndex, latest.matchIndex, match.winnerId);
   }
   match.status = "pending";
@@ -1088,6 +1293,27 @@ export function undoLastTournamentResult(
     updatedAt,
     completedAt: undefined,
   };
+}
+
+function clearDoubleBracketRoutes(rounds: TournamentRound[], match: TournamentMatch, winnerId: string, loserId?: string): void {
+  for (const [participantId, outcome] of [[winnerId, "winner"], [loserId, "loser"]] as const) {
+    if (!participantId) continue;
+    const nextMatchId = outcome === "winner" ? match.winnerNextMatchId : match.loserNextMatchId;
+    const nextSlot = outcome === "winner" ? match.winnerNextSlot : match.loserNextSlot;
+    const destination = nextMatchId && rounds.flatMap((round) => round.matches).find((item) => item.id === nextMatchId);
+    if (!destination || !nextSlot) continue;
+    const key = nextSlot === "A" ? "participantAId" : "participantBId";
+    if (destination[key] === participantId) delete destination[key];
+    if (destination.status === "complete" && destination.winnerId) {
+      const downstreamWinner = destination.winnerId;
+      const downstreamLoser = destination.participantAId === downstreamWinner ? destination.participantBId : destination.participantAId;
+      destination.status = "pending";
+      delete destination.winnerId;
+      delete destination.completedAt;
+      delete destination.resultSequence;
+      clearDoubleBracketRoutes(rounds, destination, downstreamWinner, downstreamLoser);
+    }
+  }
 }
 
 export function getTournamentRoundLabel(
@@ -1194,11 +1420,16 @@ export function getTournamentProgress(tournament: Tournament): { played: number;
       champion,
     };
   }
-  const finalMatch = tournament.rounds.at(-1)?.matches[0];
-  const champion = tournament.status === "completed"
-    ? tournament.participants.find((participant) => participant.id === finalMatch?.winnerId)?.name
+  const finalMatch = tournament.grandFinalMatchId
+    ? tournament.rounds.flatMap((round) => round.matches).find((match) => match.id === tournament.grandFinalMatchId)
+    : tournament.rounds.at(-1)?.matches[0];
+  const resetMatch = tournament.grandFinalResetMatchId
+    ? tournament.rounds.flatMap((round) => round.matches).find((match) => match.id === tournament.grandFinalResetMatchId)
     : undefined;
-  const total = tournament.rounds.flatMap((round) => round.matches).filter((match) => match.status !== "bye").length;
+  const champion = tournament.status === "completed"
+    ? tournament.participants.find((participant) => participant.id === (resetMatch?.status === "complete" ? resetMatch.winnerId : finalMatch?.winnerId))?.name
+    : undefined;
+  const total = tournament.rounds.flatMap((round) => round.matches).filter((match) => match.status !== "bye" && match.status !== "locked").length;
   return { played, total, champion };
 }
 

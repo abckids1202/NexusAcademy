@@ -9,7 +9,7 @@ import { correctTournamentMatchScore, correctTournamentMatchWinner, drawTourname
 import type { RoundRobinScoring, Tournament, TournamentConditionDraw, TournamentEvent } from "../types";
 import { useWheels } from "../hooks/useWheels";
 import { useTournaments } from "../hooks/useTournaments";
-import { canEditTournamentSetup, getDependentCompletedMatchCount, getTournamentProgress, getTournamentRoundLabel, getTournamentStandings, hasUndoableTournamentResult, isValidRoundRobinScoring, MAX_ROUND_ROBIN_PARTICIPANTS, MAX_TOURNAMENT_PARTICIPANTS } from "../utils/tournamentLogic";
+import { canEditTournamentSetup, getDependentCompletedMatchCount, getTournamentProgress, getTournamentRoundLabel, getTournamentStandings, hasUndoableTournamentResult, isValidRoundRobinScoring, MAX_DOUBLE_ELIMINATION_PARTICIPANTS, MAX_ROUND_ROBIN_PARTICIPANTS, MAX_TOURNAMENT_PARTICIPANTS } from "../utils/tournamentLogic";
 import { parseParticipantNames } from "../utils/participantImport";
 import { defaultRoundRobinScoring } from "../data/tournamentDefaults";
 import { buildTournamentCsv, getTournamentCsvPreview } from "../utils/tournamentExport";
@@ -21,11 +21,11 @@ function getTournamentSummary(tournament: Tournament): string {
     tournament.title,
     isRoundRobin
       ? `Round robin · ${tournament.roundRobinTiebreaker === "head-to-head" ? "head-to-head mini-table tiebreak" : "seed-order tiebreak"} · ${tournament.scoring?.winPoints ?? 3}/${tournament.scoring?.drawPoints ?? 1}/${tournament.scoring?.lossPoints ?? 0} win/draw/loss points`
-      : "Single elimination",
+      : tournament.format === "double-elimination" ? "Double elimination" : "Single elimination",
     "",
   ];
   for (const round of tournament.rounds) {
-    lines.push(`${getTournamentRoundLabel(round.roundNumber, tournament.rounds.length, tournament.format)}:`);
+    lines.push(`${round.label ?? getTournamentRoundLabel(round.roundNumber, tournament.rounds.length, tournament.format)}:`);
     for (const match of round.matches) {
       const first = match.participantAId ? participants.get(match.participantAId) : "TBD";
       const second = match.participantBId ? participants.get(match.participantBId) : "TBD";
@@ -150,7 +150,7 @@ export function TournamentDetailPage() {
   const tiedTop = Boolean(standings[0] && standings[1] && standings[0].rank === standings[1].rank);
   const currentLeader = tiedTop ? "Tie" : standings[0]?.participant.name ?? "—";
   const parsedSetupParticipants = useMemo(() => parseParticipantNames(setupParticipantText), [setupParticipantText]);
-  const setupParticipantLimit = setupFormat === "round-robin" ? MAX_ROUND_ROBIN_PARTICIPANTS : MAX_TOURNAMENT_PARTICIPANTS;
+  const setupParticipantLimit = setupFormat === "round-robin" ? MAX_ROUND_ROBIN_PARTICIPANTS : setupFormat === "double-elimination" ? MAX_DOUBLE_ELIMINATION_PARTICIPANTS : MAX_TOURNAMENT_PARTICIPANTS;
   const hasStaleSetup = isEditingSetup && setupBaseUpdatedAt !== undefined && tournament?.updatedAt !== setupBaseUpdatedAt;
   const csvPreview = tournament ? getTournamentCsvPreview(tournament, {
     anonymizeParticipantNames: anonymizeCsvNames,
@@ -364,7 +364,7 @@ export function TournamentDetailPage() {
 
   return <div className="stack">
     <PageHeader
-      eyebrow={tournament.format === "round-robin" ? "Round robin" : "Single elimination"}
+      eyebrow={tournament.format === "round-robin" ? "Round robin" : tournament.format === "double-elimination" ? "Double elimination" : "Single elimination"}
       title={tournament.title}
       description={`${tournament.participants.length} participants · ${progress.played} of ${progress.total} matches recorded`}
       actions={<div className="hero-actions">
@@ -440,6 +440,7 @@ export function TournamentDetailPage() {
           <span>Format</span>
           <select className="select-field" value={setupFormat} onChange={(event) => setSetupFormat(event.target.value as Tournament["format"])}>
             <option value="single-elimination">Single elimination</option>
+            <option value="double-elimination">Double elimination</option>
             <option value="round-robin">Round robin</option>
           </select>
         </label>
@@ -473,12 +474,12 @@ export function TournamentDetailPage() {
         {!participant.withdrawnAt && <button className="secondary-link" type="button" onClick={() => withdrawParticipant(participant.id, participant.name)}>Withdraw</button>}
       </article>)}</div>
     </ShellCard>
-    <ShellCard title={tournament.format === "round-robin" ? "Schedule" : "Bracket"} description={tournament.format === "round-robin" ? `Every participant plays every other participant. Points are ${tournament.scoring?.winPoints ?? 3} for a win, ${tournament.scoring?.drawPoints ?? 1} for a draw, and ${tournament.scoring?.lossPoints ?? 0} for a loss. ${tournament.roundRobinTiebreaker === "head-to-head" ? "Overall-point ties are ranked by their head-to-head mini-table; unresolved ties share rank." : "Wins break point ties; seed sets display order for otherwise tied records."}` : "Record the real match winner. Byes advance automatically and never count as played matches."}>
-      <div className="tournament-bracket" aria-label={tournament.format === "round-robin" ? "Round-robin schedule" : "Single-elimination bracket"}>
-        {tournament.rounds.map((round) => <section className="tournament-round" key={round.roundNumber} aria-label={getTournamentRoundLabel(round.roundNumber, tournament.rounds.length, tournament.format)}>
+    <ShellCard title={tournament.format === "round-robin" ? "Schedule" : "Bracket"} description={tournament.format === "round-robin" ? `Every participant plays every other participant. Points are ${tournament.scoring?.winPoints ?? 3} for a win, ${tournament.scoring?.drawPoints ?? 1} for a draw, and ${tournament.scoring?.lossPoints ?? 0} for a loss. ${tournament.roundRobinTiebreaker === "head-to-head" ? "Overall-point ties are ranked by their head-to-head mini-table; unresolved ties share rank." : "Wins break point ties; seed sets display order for otherwise tied records."}` : tournament.format === "double-elimination" ? "Winners bracket, losers bracket, and a reset grand final. A participant is eliminated only after two match losses." : "Record the real match winner. Byes advance automatically and never count as played matches."}>
+      <div className="tournament-bracket" aria-label={tournament.format === "round-robin" ? "Round-robin schedule" : `${tournament.format === "double-elimination" ? "Double-elimination" : "Single-elimination"} bracket`}>
+        {tournament.rounds.map((round) => <section className="tournament-round" key={round.roundNumber} aria-label={round.label ?? getTournamentRoundLabel(round.roundNumber, tournament.rounds.length, tournament.format)}>
           <header className="tournament-round-heading">
-            <h2>{getTournamentRoundLabel(round.roundNumber, tournament.rounds.length, tournament.format)}</h2>
-            <span>{round.matches.filter((match) => match.status === "complete").length}/{round.matches.filter((match) => match.status !== "bye").length}</span>
+            <h2>{round.label ?? getTournamentRoundLabel(round.roundNumber, tournament.rounds.length, tournament.format)}</h2>
+            <span>{round.matches.filter((match) => match.status === "complete").length}/{round.matches.filter((match) => match.status !== "bye" && match.status !== "locked").length}</span>
           </header>
           <div className="tournament-match-list">
             {round.matches.map((match) => {
@@ -492,21 +493,21 @@ export function TournamentDetailPage() {
                 b: hasScore ? String(match.scoreB) : "",
               };
               return <article className={`tournament-match ${match.status === "complete" ? "is-complete" : ""}`} data-match-id={match.id} key={match.id}>
-                <div className="tournament-match-title"><strong>{match.matchNumber === 2 && tournament.thirdPlaceMatch && round.roundNumber === tournament.rounds.at(-1)?.roundNumber ? "Third-place match" : `Match ${match.matchNumber}`}</strong>{tournament.bestOf > 1 && <span>Best of {tournament.bestOf} · {match.seriesWinsA ?? 0}-{match.seriesWinsB ?? 0}</span>}{match.status === "bye" ? <span>Bye</span> : match.status === "complete" ? <span>Complete</span> : <span>Pending</span>}</div>
+                <div className="tournament-match-title"><strong>{match.isGrandFinalReset ? "Grand-final reset" : match.matchNumber === 2 && tournament.thirdPlaceMatch && round.roundNumber === tournament.rounds.at(-1)?.roundNumber ? "Third-place match" : `Match ${match.matchNumber}`}</strong>{tournament.bestOf > 1 && <span>Best of {tournament.bestOf} · {match.seriesWinsA ?? 0}-{match.seriesWinsB ?? 0}</span>}{match.status === "bye" ? <span>Bye</span> : match.status === "locked" ? <span>Locked</span> : match.status === "complete" ? <span>Complete</span> : <span>Pending</span>}</div>
                 {match.status === "bye" && winner ? <div className="tournament-bye"><span className="seed-label">Seed {winner.seed}</span><strong>{winner.name}</strong>{(winner.group || winner.role || winner.seat) && <small className="muted">{[winner.group, winner.role, winner.seat ? `Seat ${winner.seat}` : ""].filter(Boolean).join(" · ")}</small>}<span className="muted">{tournament.format === "round-robin" ? "Bye · no match played" : "Bye · advances"}</span></div> : <>
-                  {[participantA, participantB].map((participant, side) => participant ? <div className={`tournament-entrant ${winner?.id === participant.id ? "is-winner" : ""}`} key={participant.id}>
+                  {match.status === "locked" ? <p className="muted">The reset final activates only if the losers-bracket champion wins the first grand final.</p> : <>{[participantA, participantB].map((participant, side) => participant ? <div className={`tournament-entrant ${winner?.id === participant.id ? "is-winner" : ""}`} key={participant.id}>
                     <span className="seed-label">{participant.seed}</span>
                     <strong>{participant.name}</strong>
                     {(participant.group || participant.role || participant.seat) && <small className="muted">{[participant.group, participant.role, participant.seat ? `Seat ${participant.seat}` : ""].filter(Boolean).join(" · ")}</small>}
                     {winner?.id === participant.id && correctingMatchId !== match.id && <span className="winner-tag">Winner</span>}
                     {match.status === "pending" && participantA && participantB && <button className="record-winner-button" type="button" aria-label={`Record ${participant.name} as winner of round ${round.roundNumber} match ${match.matchNumber}`} onClick={() => chooseWinner(match.id, participant.id)}>Winner</button>}
                     {match.status === "pending" && !participantB && side === 0 && <button className="record-winner-button" type="button" aria-label={`Confirm bye for ${participant.name} in match ${match.matchNumber}`} onClick={() => confirmBye(match.id, participant.name)}>Confirm bye</button>}
-                    {match.status === "complete" && correctingMatchId === match.id && !hasScore && <button className="record-winner-button" type="button" aria-label={`Correct result: make ${participant.name} the winner of match ${match.matchNumber}`} onClick={() => correctWinner(match.id, participant.id)}>Set winner</button>}
-                    {match.status === "complete" && correctingMatchId !== match.id && !hasScore && winner?.id === participant.id && <button className="record-winner-button" type="button" aria-label={`Correct result for match ${match.matchNumber}`} onClick={() => setCorrectingMatchId(match.id)}>Correct</button>}
+                    {tournament.format !== "double-elimination" && match.status === "complete" && correctingMatchId === match.id && !hasScore && <button className="record-winner-button" type="button" aria-label={`Correct result: make ${participant.name} the winner of match ${match.matchNumber}`} onClick={() => correctWinner(match.id, participant.id)}>Set winner</button>}
+                    {tournament.format !== "double-elimination" && match.status === "complete" && correctingMatchId !== match.id && !hasScore && winner?.id === participant.id && <button className="record-winner-button" type="button" aria-label={`Correct result for match ${match.matchNumber}`} onClick={() => setCorrectingMatchId(match.id)}>Correct</button>}
                     {match.status === "complete" && winner && correctingMatchId !== match.id && winner.id !== participant.id && <span className="muted">{tournament.format === "round-robin" ? "Lost match" : "Eliminated"}</span>}
                     {match.status === "complete" && !winner && <span className="muted">Draw</span>}
                     {side === 0 && <span className="sr-only">vs</span>}
-                  </div> : <div className="tournament-entrant is-undecided" key={`slot-${match.id}-${side}`}><span className="seed-label">—</span><span>{match.status === "complete" ? "No participant" : "Waiting for previous winner"}</span></div>)}
+                  </div> : <div className="tournament-entrant is-undecided" key={`slot-${match.id}-${side}`}><span className="seed-label">—</span><span>{match.status === "complete" ? "No participant" : "Waiting for previous winner"}</span></div>)}</>}
                   {tournament.format === "round-robin" && match.status === "pending" && participantA && participantB && <form className="match-score-entry" onSubmit={(event) => { event.preventDefault(); saveRoundRobinScore(match.id); }}>
                     <label className="field-stack"><span>{participantA.name} score</span><input aria-label={`${participantA.name} score, match ${match.matchNumber}`} className="text-field" type="number" min="0" max="1000000" step="1" required value={scoreDraft.a} onChange={(event) => setScoreDrafts((current) => ({ ...current, [match.id]: { ...scoreDraft, a: event.target.value } }))} /></label>
                     <label className="field-stack"><span>{participantB.name} score</span><input aria-label={`${participantB.name} score, match ${match.matchNumber}`} className="text-field" type="number" min="0" max="1000000" step="1" required value={scoreDraft.b} onChange={(event) => setScoreDrafts((current) => ({ ...current, [match.id]: { ...scoreDraft, b: event.target.value } }))} /></label>

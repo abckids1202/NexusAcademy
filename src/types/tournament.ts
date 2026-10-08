@@ -1,7 +1,7 @@
 export type TournamentSeeding = "entry-order" | "random" | "manual";
 export type TournamentByePolicy = "automatic" | "manual";
 export type TournamentWithdrawalPolicy = "advance-opponent" | "preserve-fixtures";
-export type TournamentFormat = "single-elimination" | "round-robin";
+export type TournamentFormat = "single-elimination" | "double-elimination" | "round-robin";
 export type RoundRobinTiebreaker = "seed" | "head-to-head";
 export type RoundRobinScoring = {
   winPoints: number;
@@ -9,7 +9,9 @@ export type RoundRobinScoring = {
   lossPoints: number;
 };
 export type TournamentStatus = "in_progress" | "completed";
-export type TournamentMatchStatus = "pending" | "complete" | "bye";
+export type TournamentMatchStatus = "pending" | "complete" | "bye" | "locked";
+export type TournamentBracket = "winners" | "losers" | "grand-final";
+export type TournamentMatchSlot = "A" | "B";
 export type TournamentParticipantAttendance = "expected" | "checked-in" | "not-present";
 export type TournamentResultMethod = "played" | "forfeit";
 export type TournamentBestOf = 1 | 3 | 5;
@@ -68,6 +70,13 @@ export type TournamentEvent = {
   resultMethod?: TournamentResultMethod;
   previousResultMethod?: TournamentResultMethod;
   forfeitingParticipantId?: string;
+  bracket?: TournamentBracket;
+  bracketRound?: number;
+  winnerNextMatchId?: string;
+  winnerNextSlot?: TournamentMatchSlot;
+  loserNextMatchId?: string;
+  loserNextSlot?: TournamentMatchSlot;
+  isGrandFinalReset?: boolean;
   previousForfeitingParticipantId?: string;
   seriesGameNumber?: number;
   previousSeriesGameWinnerId?: string;
@@ -101,6 +110,13 @@ export type TournamentMatch = {
   scoreB?: number;
   resultMethod?: TournamentResultMethod;
   forfeitingParticipantId?: string;
+  bracket?: TournamentBracket;
+  bracketRound?: number;
+  winnerNextMatchId?: string;
+  winnerNextSlot?: TournamentMatchSlot;
+  loserNextMatchId?: string;
+  loserNextSlot?: TournamentMatchSlot;
+  isGrandFinalReset?: boolean;
   seriesWinsA?: number;
   seriesWinsB?: number;
   seriesGames?: Array<{
@@ -113,6 +129,7 @@ export type TournamentMatch = {
 
 export type TournamentRound = {
   roundNumber: number;
+  label?: string;
   matches: TournamentMatch[];
 };
 
@@ -136,4 +153,6 @@ export type Tournament = {
   createdAt: string;
   updatedAt: string;
   completedAt?: string;
+  grandFinalMatchId?: string;
+  grandFinalResetMatchId?: string;
 };

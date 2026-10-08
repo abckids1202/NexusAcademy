@@ -6,7 +6,7 @@ import { ShellCard } from "../components/common/ShellCard";
 import { createTournamentFromPreview, createTournamentPreview, deleteTournament, type TournamentRosterMetadata } from "../services/tournamentService";
 import { useTournaments } from "../hooks/useTournaments";
 import type { RoundRobinScoring, RoundRobinTiebreaker, Tournament, TournamentBestOf, TournamentByePolicy, TournamentFormat, TournamentMatch, TournamentSeeding, TournamentWithdrawalPolicy } from "../types";
-import { MAX_ROUND_ROBIN_PARTICIPANTS, MAX_TOURNAMENT_PARTICIPANTS, getTournamentProgress, getTournamentRoundLabel, isValidRoundRobinScoring, shuffleParticipants } from "../utils/tournamentLogic";
+import { MAX_DOUBLE_ELIMINATION_PARTICIPANTS, MAX_ROUND_ROBIN_PARTICIPANTS, MAX_TOURNAMENT_PARTICIPANTS, getTournamentProgress, getTournamentRoundLabel, isValidRoundRobinScoring, shuffleParticipants } from "../utils/tournamentLogic";
 import { parseParticipantNames } from "../utils/participantImport";
 import { inspectParticipantCsv, parseParticipantCsvColumn, type CsvParticipantPreview, type ParticipantCsvInspection } from "../utils/csvImport";
 import { defaultRoundRobinScoring } from "../data/tournamentDefaults";
@@ -19,6 +19,9 @@ function describePreviewMatch(tournament: Tournament, roundIndex: number, matchI
     return tournament.format === "round-robin" ? `Bye · ${name} does not play this round` : `Bye · ${name} advances`;
   }
   if (tournament.format === "round-robin") {
+    return `${participants.get(match.participantAId ?? "") ?? "TBD"} vs ${participants.get(match.participantBId ?? "") ?? "TBD"}`;
+  }
+  if (tournament.format === "double-elimination") {
     return `${participants.get(match.participantAId ?? "") ?? "TBD"} vs ${participants.get(match.participantBId ?? "") ?? "TBD"}`;
   }
   const sourceRound = tournament.rounds[roundIndex - 1];
@@ -59,7 +62,7 @@ export function TournamentsPage() {
   const [participantNameColumn, setParticipantNameColumn] = useState(0);
   const [error, setError] = useState("");
   const parsedParticipants = useMemo(() => parseParticipantNames(participantText), [participantText]);
-  const participantLimit = format === "round-robin" ? MAX_ROUND_ROBIN_PARTICIPANTS : MAX_TOURNAMENT_PARTICIPANTS;
+  const participantLimit = format === "round-robin" ? MAX_ROUND_ROBIN_PARTICIPANTS : format === "double-elimination" ? MAX_DOUBLE_ELIMINATION_PARTICIPANTS : MAX_TOURNAMENT_PARTICIPANTS;
   const scoringValid = isValidRoundRobinScoring(scoring);
   const estimatedMatches = parsedParticipants.names.length * (parsedParticipants.names.length - 1) / 2;
   const estimatedRounds = parsedParticipants.names.length % 2 === 0
@@ -246,6 +249,7 @@ export function TournamentsPage() {
             <span>Format</span>
             <select className="select-field" value={format} onChange={(event) => { invalidatePreview(); setFormat(event.target.value as TournamentFormat); }}>
               <option value="single-elimination">Single elimination</option>
+              <option value="double-elimination">Double elimination</option>
               <option value="round-robin">Round robin</option>
             </select>
           </label>
@@ -280,7 +284,7 @@ export function TournamentsPage() {
               <option value="third-place">Add third-place match</option>
             </select>
           </label>}
-          {format === "single-elimination" && <label className="field-stack"><span>Match series</span><select className="select-field" value={bestOf} onChange={(event) => { invalidatePreview(); setBestOf(Number(event.target.value) as TournamentBestOf); }}><option value="1">Single game</option><option value="3">Best of 3</option><option value="5">Best of 5</option></select></label>}
+          {(format === "single-elimination" || format === "double-elimination") && <label className="field-stack"><span>Match series</span><select className="select-field" value={bestOf} onChange={(event) => { invalidatePreview(); setBestOf(Number(event.target.value) as TournamentBestOf); }}><option value="1">Single game</option><option value="3">Best of 3</option><option value="5">Best of 5</option></select></label>}
           {thirdPlaceMatch && parsedParticipants.names.length < 4 && <p className="validation-message" role="alert">A third-place match requires at least four participants.</p>}
           {seeding === "manual" && !manualSeedValid && <p className="validation-message" role="alert">Assign a unique positive seat number to every participant before previewing manual seeds.</p>}
           {format === "round-robin" && <label className="field-stack">
@@ -299,7 +303,7 @@ export function TournamentsPage() {
           {format === "round-robin" && !scoringValid && <p className="validation-message" role="alert">Use whole points from 0 to 10,000, with wins above draws and draws at least equal to losses.</p>}
           {format === "round-robin" && <p className="muted">Head-to-head awards 3 mini-table points for wins against opponents tied on overall points. Remaining ties share rank; seed order only sets display order.</p>}
           {format === "round-robin" && parsedParticipants.names.length >= 2 && <p className="muted">Schedule estimate · {estimatedRounds} rounds · {estimatedMatches} matches</p>}
-          {parsedParticipants.names.length > participantLimit && <p className="validation-message" role="alert">{format === "round-robin" ? "Round robin supports up to 32 participants." : `This format supports up to ${MAX_TOURNAMENT_PARTICIPANTS} participants.`}</p>}
+          {parsedParticipants.names.length > participantLimit && <p className="validation-message" role="alert">{format === "round-robin" ? "Round robin supports up to 32 participants." : format === "double-elimination" ? "Double elimination supports up to 64 participants." : `This format supports up to ${MAX_TOURNAMENT_PARTICIPANTS} participants.`}</p>}
           {parsedParticipants.duplicateCount > 0 && <p className="muted" role="status">Repeated names are ignored ({parsedParticipants.duplicateCount}).</p>}
           {error && <p className="validation-message" role="alert">{error}</p>}
           <button className="primary-link" type="submit" disabled={!title.trim() || parsedParticipants.names.length < 2 || parsedParticipants.names.length > participantLimit || (format === "round-robin" && !scoringValid) || !manualSeedValid || (thirdPlaceMatch && parsedParticipants.names.length < 4)}>
@@ -308,14 +312,14 @@ export function TournamentsPage() {
         </form>
         {preview && <section className="tournament-preview" aria-label="Tournament preview">
           <header className="tournament-preview-header">
-            <div><p className="eyebrow">Review before creating</p><h2>{preview.title}</h2><p>{preview.format === "round-robin" ? `Round robin · ${preview.roundRobinTiebreaker === "head-to-head" ? "Head-to-head tiebreak" : "Seed-order tiebreak"} · ${preview.scoring?.winPoints ?? 3}/${preview.scoring?.drawPoints ?? 1}/${preview.scoring?.lossPoints ?? 0} win/draw/loss points` : `Single elimination · Best of ${preview.bestOf}`} · {preview.participants.length} participants · {getTournamentProgress(preview).total} matches</p></div>
+            <div><p className="eyebrow">Review before creating</p><h2>{preview.title}</h2><p>{preview.format === "round-robin" ? `Round robin · ${preview.roundRobinTiebreaker === "head-to-head" ? "Head-to-head tiebreak" : "Seed-order tiebreak"} · ${preview.scoring?.winPoints ?? 3}/${preview.scoring?.drawPoints ?? 1}/${preview.scoring?.lossPoints ?? 0} win/draw/loss points` : `${preview.format === "double-elimination" ? "Double elimination" : "Single elimination"} · Best of ${preview.bestOf}`} · {preview.participants.length} participants · {getTournamentProgress(preview).total} matches</p></div>
             <span className="tournament-preview-seeding">{preview.seeding === "random" ? "Random seeding" : preview.seeding === "manual" ? "Manual seat order" : "Entry order"} · {preview.byePolicy === "manual" ? "Manual byes" : "Automatic byes"} · {preview.withdrawalPolicy === "preserve-fixtures" ? "Preserve withdrawals" : "Advance withdrawals"}{preview.thirdPlaceMatch ? " · Third-place match" : ""}</span>
           </header>
           {preview.seeding === "random" && <p className="muted">This shuffled seed order is fixed for this preview and will be used when you create the tournament.</p>}
           <ol className="tournament-preview-seeds" aria-label="Preview seed order">{preview.participants.map((participant) => <li key={participant.id}><span>Seed {participant.seed}</span><strong>{participant.name}</strong>{(participant.group || participant.role || participant.seat) && <small className="muted">{[participant.group, participant.role, participant.seat ? `Seat ${participant.seat}` : ""].filter(Boolean).join(" · ")}</small>}</li>)}</ol>
           <div className="tournament-preview-rounds" aria-label="Preview pairings" tabIndex={0}>
-            {preview.rounds.map((round, roundIndex) => <section className="tournament-preview-round" key={round.roundNumber} aria-label={getTournamentRoundLabel(round.roundNumber, preview.rounds.length, preview.format)}>
-              <h3>{getTournamentRoundLabel(round.roundNumber, preview.rounds.length, preview.format)}</h3>
+            {preview.rounds.map((round, roundIndex) => <section className="tournament-preview-round" key={round.roundNumber} aria-label={round.label ?? getTournamentRoundLabel(round.roundNumber, preview.rounds.length, preview.format)}>
+              <h3>{round.label ?? getTournamentRoundLabel(round.roundNumber, preview.rounds.length, preview.format)}</h3>
               <ul>{round.matches.map((match, matchIndex) => <li className="tournament-preview-match" data-match-id={match.id} key={match.id}><span>Match {match.matchNumber}</span><strong>{describePreviewMatch(preview, roundIndex, matchIndex, match)}</strong></li>)}</ul>
             </section>)}
           </div>
@@ -332,7 +336,7 @@ export function TournamentsPage() {
             return <article className="project-row tournament-list-row" key={tournament.id}>
               <div className="project-copy">
                 <strong>{tournament.title}</strong>
-                <span>{tournament.format === "round-robin" ? "Round robin" : "Single elimination"} · {tournament.participants.length} participants · {progress.played}/{progress.total} matches · {tournament.status === "completed" ? `Champion: ${progress.champion ?? "Tie"}` : "In progress"}</span>
+                <span>{tournament.format === "round-robin" ? "Round robin" : tournament.format === "double-elimination" ? "Double elimination" : "Single elimination"} · {tournament.participants.length} participants · {progress.played}/{progress.total} matches · {tournament.status === "completed" ? `Champion: ${progress.champion ?? "Tie"}` : "In progress"}</span>
               </div>
               <div className="row-actions">
                 <Link className="square-action" to={`/tournaments/${tournament.id}`} aria-label={`Open ${tournament.title}`} title="Open tournament"><ArrowRight size={16} /></Link>

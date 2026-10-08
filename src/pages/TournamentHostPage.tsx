@@ -155,7 +155,7 @@ export function TournamentHostPage() {
     }
   }
 
-  const formatName = tournament.format === "round-robin" ? "Round robin" : "Single elimination";
+  const formatName = tournament.format === "round-robin" ? "Round robin" : tournament.format === "double-elimination" ? "Double elimination" : "Single elimination";
 
   return <div className={`tournament-host${isAudience ? " is-audience" : ""}`}>
     <header className="host-topbar">

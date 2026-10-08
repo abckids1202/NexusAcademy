@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { TournamentParticipant } from "../types";
 import {
   createSingleEliminationTournament,
+  createDoubleEliminationTournament,
   getSeedOrder,
   getTournamentProgress,
   getTournamentRoundLabel,
@@ -38,6 +39,33 @@ function bracket(count: number) {
     idFactory: (prefix) => `${prefix}-${++id}`,
   });
 }
+
+describe("double-elimination brackets", () => {
+  it("routes winners and losers into explicit bracket stages", () => {
+    const tournament = createDoubleEliminationTournament("Double Cup", entrants(4), {
+      id: "double-1",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      idFactory: (() => { let id = 0; return (prefix: string) => `${prefix}-${++id}`; })(),
+    });
+    expect(tournament.format).toBe("double-elimination");
+    expect(tournament.rounds[0].label).toBe("Winners Round 1");
+    expect(tournament.rounds[1].label).toBe("Winners Round 2");
+    expect(tournament.rounds.some((round) => round.label === "Losers Round 1")).toBe(true);
+    expect(tournament.rounds.at(-1)?.matches[1]).toMatchObject({ status: "locked", isGrandFinalReset: true });
+
+    const first = tournament.rounds[0].matches[0];
+    const second = tournament.rounds[0].matches[1];
+    const afterFirst = recordTournamentWinner(tournament, first.id, first.participantAId!, "2026-01-01T01:00:00.000Z");
+    const afterSecond = recordTournamentWinner(afterFirst, second.id, second.participantAId!, "2026-01-01T02:00:00.000Z");
+    const winnersFinal = afterSecond.rounds[1].matches[0];
+    const firstLosersMatch = afterSecond.rounds.find((round) => round.label === "Losers Round 1")!.matches[0];
+
+    expect(winnersFinal.participantAId).toBe(first.participantAId);
+    expect(winnersFinal.participantBId).toBe(second.participantAId);
+    expect(firstLosersMatch.participantAId).toBe(first.participantBId);
+    expect(firstLosersMatch.participantBId).toBe(second.participantBId);
+  });
+});
 
 describe("tournament participant attendance", () => {
   it("records changes without changing pairings, scores, or results", () => {

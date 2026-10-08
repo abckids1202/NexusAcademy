@@ -2,6 +2,7 @@ import type { RoundRobinScoring, RoundRobinTiebreaker, Tournament, TournamentBes
 import { createId } from "../utils/ids";
 import {
   createSingleEliminationTournament,
+  createDoubleEliminationTournament,
   createRoundRobinTournament,
   correctTournamentWinner,
   recordTournamentWinner,
@@ -70,7 +71,9 @@ export function createTournamentPreview(
   const entrants = orderedNames.map((name) => ({ id: createId("participant"), name, ...(metadataByName[name.toLocaleLowerCase()] ?? {}) }));
   const tournament = format === "round-robin"
     ? createRoundRobinTournament(title, entrants, { seeding, roundRobinTiebreaker, scoring, byePolicy, withdrawalPolicy })
-    : createSingleEliminationTournament(title, entrants, { seeding, byePolicy, withdrawalPolicy, thirdPlaceMatch, bestOf });
+    : format === "double-elimination"
+      ? createDoubleEliminationTournament(title, entrants, { seeding, byePolicy, withdrawalPolicy, bestOf })
+      : createSingleEliminationTournament(title, entrants, { seeding, byePolicy, withdrawalPolicy, thirdPlaceMatch, bestOf });
   return tournament;
 }
 

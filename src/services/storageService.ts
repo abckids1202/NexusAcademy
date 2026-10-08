@@ -424,7 +424,7 @@ function isValidTournamentEvent(value: unknown): boolean {
 
 function isValidTournament(value: unknown): boolean {
   if (!isRecord(value) || typeof value.id !== "string" || typeof value.title !== "string" ||
-    (value.format !== undefined && !isOneOf(value.format, ["single-elimination", "round-robin"] as const)) ||
+    (value.format !== undefined && !isOneOf(value.format, ["single-elimination", "double-elimination", "round-robin"] as const)) ||
     (value.roundRobinTiebreaker !== undefined && !isOneOf(value.roundRobinTiebreaker, ["seed", "head-to-head"] as const)) ||
     (value.byePolicy !== undefined && !isOneOf(value.byePolicy, ["automatic", "manual"] as const)) ||
     (value.withdrawalPolicy !== undefined && !isOneOf(value.withdrawalPolicy, ["advance-opponent", "preserve-fixtures"] as const)) ||
@@ -468,13 +468,21 @@ function isValidTournament(value: unknown): boolean {
       (typeof event.previousForfeitingParticipantId === "string" && !participantIds.has(event.previousForfeitingParticipantId))))) return false;
   const validRounds = value.rounds.every((round) => isRecord(round) &&
     typeof round.roundNumber === "number" && Number.isInteger(round.roundNumber) &&
+    (round.label === undefined || typeof round.label === "string") &&
     Array.isArray(round.matches) && round.matches.every((match) => {
       if (!isRecord(match) || typeof match.id !== "string" ||
         typeof match.matchNumber !== "number" || !Number.isInteger(match.matchNumber) ||
-        !isOneOf(match.status, ["pending", "complete", "bye"] as const) ||
+        !isOneOf(match.status, ["pending", "complete", "bye", "locked"] as const) ||
         !hasOptionalString(match, "participantAId") || !hasOptionalString(match, "participantBId") ||
         !hasOptionalString(match, "winnerId") || !hasOptionalString(match, "completedAt") ||
         !hasOptionalString(match, "forfeitingParticipantId") ||
+        !hasOptionalString(match, "bracket") ||
+        !hasOptionalString(match, "winnerNextMatchId") || !hasOptionalString(match, "loserNextMatchId") ||
+        (match.winnerNextSlot !== undefined && !isOneOf(match.winnerNextSlot, ["A", "B"] as const)) ||
+        (match.loserNextSlot !== undefined && !isOneOf(match.loserNextSlot, ["A", "B"] as const)) ||
+        (match.bracket !== undefined && !isOneOf(match.bracket, ["winners", "losers", "grand-final"] as const)) ||
+        (match.bracketRound !== undefined && (typeof match.bracketRound !== "number" || !Number.isInteger(match.bracketRound) || match.bracketRound < 1)) ||
+        (match.isGrandFinalReset !== undefined && typeof match.isGrandFinalReset !== "boolean") ||
         (match.seriesWinsA !== undefined && (typeof match.seriesWinsA !== "number" || !Number.isInteger(match.seriesWinsA) || match.seriesWinsA < 0)) ||
         (match.seriesWinsB !== undefined && (typeof match.seriesWinsB !== "number" || !Number.isInteger(match.seriesWinsB) || match.seriesWinsB < 0)) ||
         (match.seriesGames !== undefined && (!Array.isArray(match.seriesGames) || !match.seriesGames.every((game) => isRecord(game) && typeof game.gameNumber === "number" && Number.isInteger(game.gameNumber) && game.gameNumber > 0 && typeof game.winnerId === "string" && isOneOf(game.resultMethod, ["played", "forfeit"] as const) && typeof game.completedAt === "string" && Number.isFinite(Date.parse(game.completedAt))))) ||
@@ -494,6 +502,7 @@ function isValidTournament(value: unknown): boolean {
       return validSequence && (
         match.status === "pending" ? !hasWinner && !hasScores && match.resultMethod === undefined && match.forfeitingParticipantId === undefined
           : match.status === "bye" ? hasWinner && !hasScores && match.resultMethod === undefined && match.forfeitingParticipantId === undefined && participants.length === 1 && participants[0] === match.winnerId
+            : match.status === "locked" ? match.isGrandFinalReset === true && participants.length === 0 && !hasWinner && !hasScores && match.resultMethod === undefined && match.forfeitingParticipantId === undefined
             : validForfeit && participants.length === 2 && (hasWinner
               ? participants.includes(match.winnerId as string) && (!hasScores ||
                 (match.winnerId === match.participantAId ? Number(match.scoreA) > Number(match.scoreB) : Number(match.scoreB) > Number(match.scoreA)))
