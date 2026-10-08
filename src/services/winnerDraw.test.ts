@@ -50,4 +50,14 @@ describe("unique winner draw history", () => {
 
     expect(() => importData(JSON.stringify(partial))).toThrow("Invalid or unsupported WheelForge backup.");
   });
+
+  it("round-trips a full random order while preserving duplicate labels", () => {
+    const wheel = loadData().wheels[0];
+    const results = saveUniqueWinnerDraw(wheel, [
+      { option: { ...wheel.options[0], label: "Same" }, chance: 0.5 },
+      { option: { ...wheel.options[1], label: "same" }, chance: 1 },
+    ], "random-order");
+    expect(results[0].drawType).toBe("random-order");
+    expect(() => importData(exportData())).not.toThrow();
+  });
 });

@@ -181,6 +181,7 @@ function isValidSpinResult(value: unknown): boolean {
     typeof value.spinIndex === "number" && Number.isFinite(value.spinIndex) &&
     (value.spinMode === undefined || isOneOf(value.spinMode, ["normal", "elimination", "no-repeat", "accumulation"] as const)) &&
     (value.removedOptionAfterSpin === undefined || typeof value.removedOptionAfterSpin === "boolean") &&
+    (value.drawType === undefined || isOneOf(value.drawType, ["unique-winners", "random-order"] as const)) &&
     hasOptionalString(value, "chainId") && hasOptionalString(value, "chainStepId");
 }
 
@@ -195,12 +196,15 @@ function isValidWinnerDrawGroups(results: unknown[]): boolean {
     if (!first || typeof first.drawSize !== "number" || group.length !== first.drawSize) return false;
     const positions = new Set<number>();
     const labels = new Set<string>();
+    const optionIds = new Set<string>();
     for (const result of group) {
       if (result.drawSize !== first.drawSize || result.wheelId !== first.wheelId ||
         typeof result.drawPosition !== "number" || positions.has(result.drawPosition)) return false;
       positions.add(result.drawPosition);
+      if (typeof result.optionId !== "string" || optionIds.has(result.optionId)) return false;
+      optionIds.add(result.optionId);
       const label = typeof result.resultLabel === "string" ? result.resultLabel.trim().toLowerCase() : "";
-      if (!label || labels.has(label)) return false;
+      if (!label || (first.drawType !== "random-order" && labels.has(label))) return false;
       labels.add(label);
     }
     return positions.size === first.drawSize &&

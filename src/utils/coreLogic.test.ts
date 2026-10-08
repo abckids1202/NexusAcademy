@@ -5,7 +5,7 @@ import { getImportReviewSummary, getStorageHealth, importData, loadData, mergeIm
 import { undoLatestStandaloneSpin } from "../services/spinService";
 import { createTournament, updateTournamentSetup } from "../services/tournamentService";
 import { findNextRunnableStepIndex, resolveChainStep } from "./chainLogic";
-import { countAccumulatedSelections, createSpinSelection, drawUniqueWinners, getRandomSpinDurationMs, getUniqueWinnerCount, pickWeightedOption, shouldRemoveWinnerAfterSpin } from "./spinLogic";
+import { countAccumulatedSelections, createSpinSelection, drawRandomOrder, drawUniqueWinners, getRandomSpinDurationMs, getUniqueWinnerCount, pickWeightedOption, shouldRemoveWinnerAfterSpin } from "./spinLogic";
 import { createRoundRobinTournament, createSingleEliminationTournament, drawTournamentWinners, recordTournamentCondition, recordTournamentScore, recordTournamentWinner, undoTournamentWinnerDraw } from "./tournamentLogic";
 import { calculateTargetRotation, getSegmentAngles, normalizeDegrees } from "./wheelMath";
 import { validateChain, validateWheel } from "./validation";
@@ -173,6 +173,18 @@ describe("wheel selection and geometry", () => {
 
     expect(getUniqueWinnerCount(options)).toBe(1);
     expect(() => drawUniqueWinners(options, 2, () => 0.5)).toThrow("Choose between 1 and 1 unique winners.");
+  });
+
+  it("generates a complete weighted order without collapsing duplicate entries", () => {
+    const options = [
+      option("a1", 1, 0, { label: "Avery" }),
+      option("a2", 2, 1, { label: "avery" }),
+      option("jordan", 3, 2, { label: "Jordan" }),
+    ];
+    const order = drawRandomOrder(options, () => 0);
+    expect(order).toHaveLength(3);
+    expect(new Set(order.map(({ option: item }) => item.id)).size).toBe(3);
+    expect(order[0].chance).toBe(1 / 6);
   });
 
   it("accumulates only spins recorded in accumulation mode", () => {

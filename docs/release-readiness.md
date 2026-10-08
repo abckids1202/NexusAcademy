@@ -5,10 +5,10 @@
 ## Verified in the current checkout
 
 - `npm run lint` passes.
-- `npm test -- --run` passes with 125 tests across 11 source test files.
+- `npm test -- --run` passes with 128 tests across 11 source test files.
 - `npm run audit` passes with no high or critical advisories.
 - `npm run build` passes.
-- `npm run test:e2e` passes with 46 Chromium journeys.
+- `npm run test:e2e` passes with 47 Chromium journeys.
 - `npm run test:e2e:cloud` passes with 2 mocked cloud journeys.
 - Vitest is scoped to `src/**/*.test.ts`; legacy repository tests cannot silently contaminate the WheelForge gate.
 - GitHub Actions runs lint, unit tests, audit, build, Chromium browser tests, cloud-mock tests, and uploads Playwright artifacts on failure.
@@ -19,6 +19,7 @@
 - Workspace writes carry a monotonic revision and compare-and-swap guard, so a stale tab write fails instead of silently replacing a newer workspace. Record-level conflict resolution and IndexedDB migration remain future work.
 - Template-pack validation now checks wheel settings/options, duplicate IDs, chain steps, wheel/fallback references, metadata, and import boundaries before persistence or installation.
 - Custom template packs can be assembled from saved wheels/generators, exported/imported, updated with independent snapshots, diffed by component, and restored to an earlier version without changing installed copies.
+- Spin workflows can generate a full weighted random order across every active entry, including duplicate labels, with saved order, conditional odds, export, and batch undo.
 - Tournament setup supports automatic or host-confirmed bye policies; manual byes remain pending, are confirmed from host/detail views, advance the bracket, and are recorded in activity history.
 - Tournament participant withdrawal supports an explicit reviewed policy: advance opponents through affected pending fixtures or preserve pending fixtures. Withdrawals persist, update attendance, and appear in activity history.
 - Tournament CSV imports detect common headers and support explicit participant-name column mapping, with legacy first-column files still supported.

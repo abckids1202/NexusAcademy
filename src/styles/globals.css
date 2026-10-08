@@ -1410,6 +1410,18 @@ textarea.text-field {
   min-height: 112px;
 }
 
+.random-order-control {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+
+.random-order-control p {
+  margin: 0;
+}
+
 .template-favorite {
   display: grid;
   width: 36px;

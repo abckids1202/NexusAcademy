@@ -190,7 +190,7 @@ The current setup supports entry-order/random seeding, a schedule estimate, and 
 | Template wheels and template packs | Faster first success, reusable use cases | Low-medium | Milestone 2 |
 | User-created templates | Repeated classroom/event workflows | Medium | Milestone 2 |
 | CSV/paste/import preview | Large wheels and tournament entrants | Low-medium | Weighted wheel and first-column roster previews implemented |
-| Multi-winner draw / full random order | Giveaway and elimination modes | Medium | Unique-label weighted draw, odds per pick, batch undo/export implemented; full random order remains |
+| Multi-winner draw / full random order | Giveaway, seating, and event ordering | Medium | Weighted no-replacement order across every active entry, duplicate-safe history, odds, export, and batch undo implemented |
 | Tournament condition wheel | Maps, challenges, sides, roles | Medium | Tournament milestone, early |
 | Tournament winner wheel | Casual lottery/party game only | Medium | Ticket-weighted multi-winner draw implemented; external verification is future work |
 | Team splitter | Classrooms, game nights, events | Medium | After participant list model is reusable |

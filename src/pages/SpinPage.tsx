@@ -11,7 +11,7 @@ import { clearSpinHistory, getSpinResultsForWheel, saveSpinResult, saveUniqueWin
 import { saveWheel } from "../services/wheelService";
 import type { SpinResult } from "../types";
 import { useWheels } from "../hooks/useWheels";
-import { countAccumulatedSelections, createSpinSelection, drawUniqueWinners, easeOutCubic, getRandomSpinDurationMs, getUniqueWinnerCount, shouldRemoveWinnerAfterSpin } from "../utils/spinLogic";
+import { countAccumulatedSelections, createSpinSelection, drawRandomOrder, drawUniqueWinners, easeOutCubic, getRandomSpinDurationMs, getUniqueWinnerCount, shouldRemoveWinnerAfterSpin } from "../utils/spinLogic";
 import { playSpinAudio, prepareSpinAudio, shouldSkipSpinAnimation } from "../utils/celebration";
 import { randomUnit } from "../utils/random";
 import {
@@ -36,8 +36,9 @@ function groupSpinHistory(history: SpinResult[]): HistoryDisplayItem[] {
 
 function formatWinnerDraw(results: SpinResult[]): string {
   const title = results[0]?.wheelTitle ?? "WheelForge";
+  const label = results[0]?.drawType === "random-order" ? "random order" : "unique winners";
   return [
-    `${title} · ${results.length} unique winners · drawn ${results[0]?.createdAt ?? ""}`,
+    `${title} · ${results.length} ${label} · drawn ${results[0]?.createdAt ?? ""}`,
     ...results.map((result, index) => `${index + 1}. ${result.resultLabel} · ${Math.round(result.resultChance * 1000) / 10}% chance at this pick`),
   ].join("\n");
 }
@@ -266,6 +267,19 @@ export function SpinPage() {
     }
   }
 
+  function generateRandomOrder() {
+    if (!selectedWheel || isSpinning) return;
+    try {
+      const results = saveUniqueWinnerDraw(selectedWheel, drawRandomOrder(selectedWheel.options), "random-order");
+      setHistory(getSpinResultsForWheel(selectedWheel.id));
+      const announcement = `Generated a complete random order of ${results.length} entries from ${selectedWheel.title}.`;
+      setLiveAnnouncement(announcement);
+      setHistoryMessage(announcement);
+    } catch (error) {
+      setHistoryMessage(error instanceof Error ? error.message : "Could not generate a random order.");
+    }
+  }
+
   async function copyWinnerDraw(results: SpinResult[]) {
     try {
       await navigator.clipboard.writeText(formatWinnerDraw(results));
@@ -393,6 +407,10 @@ export function SpinPage() {
                 <button className="primary-link" type="button" disabled={!validWinnerCount || isSpinning} onClick={drawMultipleWinners}>Draw {validWinnerCount ? requestedWinnerCount : "unique"} winners</button>
               </div>
               {winnerCount && !validWinnerCount && <p className="validation-message" role="alert">Enter a whole number from 1 to {uniqueWinnerCount}.</p>}
+              <div className="random-order-control">
+                <p className="muted">Need every active entry in a shuffled sequence? Generate a weighted order without removing anything from the saved wheel.</p>
+                <button className="secondary-link" type="button" disabled={activeOptions.length === 0 || isSpinning} onClick={generateRandomOrder}>Generate full random order</button>
+              </div>
             </section>
 
             <div className="history-list" aria-live="polite">
@@ -401,8 +419,8 @@ export function SpinPage() {
               {historyItems.length > 0 ? (
                 historyItems.slice(0, 8).map((item) => {
                   const first = item.results[0];
-                  if (item.drawId) return <section className="winner-draw-history" key={item.drawId} aria-label={`${item.results.length} unique winners from ${first.wheelTitle}`}>
-                    <header><strong>{item.results.length} unique winners</strong><time dateTime={first.createdAt}>{new Date(first.createdAt).toLocaleTimeString()}</time></header>
+                  if (item.drawId) { const drawLabel = first.drawType === "random-order" ? "random order" : "unique winners"; return <section className="winner-draw-history" key={item.drawId} aria-label={`${item.results.length} ${drawLabel} from ${first.wheelTitle}`}>
+                    <header><strong>{item.results.length} {drawLabel}</strong><time dateTime={first.createdAt}>{new Date(first.createdAt).toLocaleTimeString()}</time></header>
                     <ol>{item.results.map((result) => <li key={result.id}>
                       <span className="option-swatch" style={{ background: result.resultColor }} aria-hidden="true" />
                       <span>{result.resultLabel}</span>
@@ -412,7 +430,7 @@ export function SpinPage() {
                       <button className="square-action" type="button" title="Copy winner list" aria-label={`Copy winner list for ${first.wheelTitle}`} onClick={() => void copyWinnerDraw(item.results)}><Copy size={16} /></button>
                       <button className="square-action" type="button" title="Download winner list" aria-label={`Download winner list for ${first.wheelTitle}`} onClick={() => downloadWinnerDraw(item.results)}><Download size={16} /></button>
                     </div>
-                  </section>;
+                  </section>; }
                   const result = first;
                   return <div className="history-row" key={result.id}>
                     <span className="option-swatch" style={{ background: result.resultColor }} />

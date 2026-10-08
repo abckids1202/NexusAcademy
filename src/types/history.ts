@@ -13,6 +13,7 @@ export type SpinResult = {
   spinMode?: SpinMode;
   removedOptionAfterSpin?: boolean;
   drawId?: string;
+  drawType?: "unique-winners" | "random-order";
   drawPosition?: number;
   drawSize?: number;
   chainId?: string;

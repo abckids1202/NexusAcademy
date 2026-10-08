@@ -80,3 +80,23 @@ test("multi-winner draws preserve duplicate-ticket odds, export the list, and un
     .spinResults.filter((result: { drawId?: string }) => result.drawId).length);
   expect(savedDrawResults).toBe(0);
 });
+
+test("full random order includes every active entry, including duplicate labels", async ({ page }) => {
+  await page.goto("/wheels/new");
+  await page.getByLabel("Title").fill("Random order wheel");
+  const labels = page.locator(".option-editor-row input.text-field");
+  await labels.nth(0).fill("Same");
+  await labels.nth(1).fill("same");
+  await labels.nth(2).fill("Different");
+  await page.getByRole("button", { name: "Save and spin" }).first().click();
+
+  await page.getByRole("button", { name: "Generate full random order" }).click();
+  const order = page.locator(".winner-draw-history");
+  await expect(order).toHaveAttribute("aria-label", /3 random order/);
+  await expect(order.getByRole("listitem")).toHaveCount(3);
+  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem("wheelforge_data_v1") ?? "null").spinResults.filter((result: { drawType?: string }) => result.drawType === "random-order"));
+  expect(stored).toHaveLength(3);
+  expect(stored.map((result: { resultLabel: string }) => result.resultLabel).sort()).toEqual(["Different", "Same", "same"].sort());
+  await page.getByRole("button", { name: "Undo latest winner draw for Random order wheel" }).click();
+  await expect(order).toHaveCount(0);
+});

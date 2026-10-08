@@ -62,6 +62,26 @@ export function drawUniqueWinners(
   return winners;
 }
 
+export function drawRandomOrder(
+  options: WheelOption[],
+  random: () => number = randomUnit,
+): UniqueWinnerSelection[] {
+  let remaining = getActiveOptions(options);
+  if (remaining.length < 1) throw new RangeError("Add at least one active option before generating an order.");
+  const ordered: UniqueWinnerSelection[] = [];
+  while (remaining.length > 0) {
+    const option = pickWeightedOption(remaining, random);
+    if (!option) throw new Error("Could not generate a random order from the active options.");
+    const chance = calculateOptionChance(option, remaining);
+    ordered.push({
+      option: { ...option, specialType: getSpecialAnimationType(option, chance) },
+      chance,
+    });
+    remaining = remaining.filter((candidate) => candidate.id !== option.id);
+  }
+  return ordered;
+}
+
 export function shouldRemoveWinnerAfterSpin(wheel: Wheel): boolean {
   return wheel.spinMode !== "accumulation" &&
     (wheel.removeWinnerAfterSpin || wheel.spinMode === "elimination");

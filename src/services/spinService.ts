@@ -27,7 +27,7 @@ export function saveSpinResult(
   return spinResult;
 }
 
-export function saveUniqueWinnerDraw(wheel: Wheel, selections: UniqueWinnerSelection[]): SpinResult[] {
+export function saveUniqueWinnerDraw(wheel: Wheel, selections: UniqueWinnerSelection[], drawType: SpinResult["drawType"] = "unique-winners"): SpinResult[] {
   if (selections.length < 1) throw new Error("A winner draw must include at least one result.");
   const data = loadData();
   const drawId = createId("draw");
@@ -43,6 +43,7 @@ export function saveUniqueWinnerDraw(wheel: Wheel, selections: UniqueWinnerSelec
     resultChance: chance,
     specialType: option.specialType,
     drawId,
+    drawType,
     drawPosition: index + 1,
     drawSize: selections.length,
     createdAt,
