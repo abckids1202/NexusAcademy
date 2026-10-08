@@ -28,7 +28,7 @@ WheelForge is suitable for a local beta release after a clean-clone check. It is
 1. Create or designate a dedicated WheelForge GitHub repository; the current remote is named `NexusAcademy` and still contains unrelated legacy directories.
 2. Configure a staging Supabase project and verify RLS isolation with two real accounts.
 3. Verify email confirmation, password recovery, account deletion, cloud restore, and redirect URLs against staging.
-4. Add a production host with HTTPS, security headers/CSP, environment-variable configuration, and a documented rollback procedure.
+4. Deploy through the documented host configuration in `vercel.json` and verify HTTPS, security headers/CSP, environment variables, and rollback using `docs/deployment-runbook.md`.
 5. Add error monitoring, uptime monitoring, backup retention, and a restore drill.
 6. Complete manual keyboard, screen-reader, mobile, Firefox, Safari, Edge, and print QA.
 7. Decide the local-data policy for large workspaces and concurrent tabs; current storage remains one optimistic `localStorage` document.
