@@ -8,7 +8,7 @@
 - `npm test -- --run` passes with 131 tests across 11 source test files.
 - `npm run audit` passes with no high or critical advisories.
 - `npm run build` passes.
-- `npm run test:e2e` passes with 50 Chromium journeys.
+- `npm run test:e2e` passes with 51 Chromium journeys.
 - `npm run test:e2e:cloud` passes with 2 mocked cloud journeys.
 - `npm run test:e2e:cross-browser` provides 3 Firefox and 3 WebKit smoke journeys in CI for routing, the shell, templates, and tournament setup; full feature coverage remains Chromium-based.
 - Local Windows verification currently passes WebKit smoke tests; Playwright Firefox cannot launch in this environment (`spawn UNKNOWN`), so Firefox evidence must come from the Ubuntu CI runner or a manual Firefox session.
