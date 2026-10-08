@@ -154,6 +154,6 @@ Research checked September 22, 2026 against Wheel of Names' FAQ, Challonge's com
 
 ## Verification Record
 
-- Current release-gate evidence: lint, 136 unit tests, production build, 52 Chromium journeys, 2 mocked-cloud journeys, cross-browser smoke configuration, and zero high/critical dependency advisories. Automated checks do not replace live Supabase, deployment, monitoring, recovery-drill, or manual accessibility verification.
+- Current release-gate evidence: lint, 136 unit tests with a 70/65/75/75 global coverage gate, production build, 52 Chromium journeys, 2 mocked-cloud journeys, cross-browser smoke configuration, and zero high/critical dependency advisories. Automated checks do not replace live Supabase, deployment, monitoring, recovery-drill, or manual accessibility verification.
 - `npm audit --audit-level=low`: zero vulnerabilities.
 - Not verified: live Supabase, real email delivery, deployed account-deletion function, two-account RLS isolation, production deployment/monitoring, manual screen-reader testing, and full feature coverage beyond the configured Chromium suite (Firefox/WebKit have smoke coverage in CI).
