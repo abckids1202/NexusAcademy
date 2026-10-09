@@ -2,7 +2,7 @@
 
 This runbook describes a repeatable static deployment for the Vite application. It does not claim that a production host or Supabase project is configured; those are release tasks owned by the deployment operator.
 
-Use [the release checklist](release-checklist.md) to record evidence and sign off each staging or production release. The checklist is intentionally explicit about external verification that cannot be proven from this repository alone.
+Use [the release checklist](release-checklist.md) to record evidence and sign off each staging or production release. The [repository boundary](repository-boundary.md) defines which root application is deployed, and the [operations runbook](operations-runbook.md) covers monitoring, incidents, rollback, and recovery. The checklist is intentionally explicit about external verification that cannot be proven from this repository alone.
 
 ## Preflight
 

@@ -11,7 +11,7 @@ Use this checklist for each staging release and for the production promotion dec
 - [ ] Release owner: `________________`
 - [ ] QA owner: `________________`
 - [ ] Planned release date: `________________`
-- [ ] Repository decision recorded: dedicated WheelForge repository or documented monorepo
+- [ ] Documented monorepo boundary accepted, or a dedicated WheelForge repository decision is recorded.
 
 ## Automated Gate
 
@@ -92,6 +92,7 @@ Use this checklist for each staging release and for the production promotion dec
 - [ ] Production logs can be reviewed without exposing backup payloads or secrets.
 - [ ] Incident owner and escalation path are documented.
 - [ ] Rollback has been rehearsed or the exact rollback command/path is documented.
+- [ ] [Operations runbook](operations-runbook.md) owners and escalation path are filled in.
 - [ ] Previous known-good deployment and commit are recorded.
 - [ ] Production database migration and rollback policy is reviewed.
 
