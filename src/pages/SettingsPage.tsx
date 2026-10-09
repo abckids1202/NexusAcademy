@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import type { User } from "@supabase/supabase-js";
-import { Cloud, CloudDownload, CloudUpload, Download, LogIn, LogOut, RotateCcw, Trash2, Upload } from "lucide-react";
+import { Bug, Cloud, CloudDownload, CloudUpload, Download, LogIn, LogOut, RotateCcw, Trash2, Upload } from "lucide-react";
 import { PageHeader } from "../components/common/PageHeader";
 import { ShellCard } from "../components/common/ShellCard";
 import type { UserSettings, WheelForgeData } from "../types";
@@ -22,6 +22,7 @@ import {
   writeCloudBackup,
 } from "../services/cloudBackupService";
 import { formatStorageBytes, getStorageEstimate, getWorkspaceSizeBytes, type StorageEstimate } from "../services/storageDiagnostics";
+import { clearRuntimeDiagnostics, exportRuntimeDiagnostics, getRuntimeDiagnostics } from "../services/runtimeDiagnostics";
 
 function applyPreferences(settings: UserSettings) {
   const theme = settings.theme === "system"
@@ -52,6 +53,7 @@ export function SettingsPage() {
   const [deleteAccountPhrase, setDeleteAccountPhrase] = useState("");
   const [storageEstimate, setStorageEstimate] = useState<StorageEstimate>({ supported: false });
   const [workspaceSizeBytes, setWorkspaceSizeBytes] = useState(() => getWorkspaceSizeBytes());
+  const [diagnosticCount, setDiagnosticCount] = useState(() => getRuntimeDiagnostics().length);
   const preservedCorruptData = getPreservedCorruptData();
 
   useEffect(() => {
@@ -101,6 +103,23 @@ export function SettingsPage() {
     anchor.remove();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     setMessage("Backup downloaded.");
+  }
+
+  function downloadDiagnostics() {
+    const blob = new Blob([exportRuntimeDiagnostics()], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `wheelforge-diagnostics-${new Date().toISOString().slice(0, 10)}.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+    setMessage("Diagnostics downloaded without workspace data.");
+  }
+
+  function clearDiagnostics() {
+    clearRuntimeDiagnostics();
+    setDiagnosticCount(0);
+    setMessage("Local diagnostics cleared.");
   }
 
   function exportPreservedData() {
@@ -372,6 +391,15 @@ export function SettingsPage() {
           <button className="danger-button reset-button" type="button" disabled={preservedCorruptData !== undefined} onClick={clearHistory}>Clear saved history</button>
           <button className="danger-button reset-button" type="button" onClick={resetWorkspace}>Reset all local data</button>
           {message && <p className="status-note" role="status">{message}</p>}
+        </div>
+      </ShellCard>
+      <ShellCard title="Support diagnostics" description="A small browser-health report for troubleshooting. It does not include workspace contents or backup data.">
+        <div className="settings-fields">
+          <p className="muted">{diagnosticCount} diagnostic event{diagnosticCount === 1 ? "" : "s"} stored on this device.</p>
+          <div className="hero-actions">
+            <button className="secondary-link" type="button" onClick={downloadDiagnostics}><Bug size={16} /> Download diagnostics</button>
+            <button className="secondary-link" type="button" disabled={diagnosticCount === 0} onClick={clearDiagnostics}>Clear diagnostics</button>
+          </div>
         </div>
       </ShellCard>
       <ShellCard title="Private cloud backup" description="Optional account-backed backup. Upload and restore are always manual; this does not merge or live-sync devices.">

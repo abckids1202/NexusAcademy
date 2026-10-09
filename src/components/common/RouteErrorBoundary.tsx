@@ -1,6 +1,7 @@
 import { Component, type PropsWithChildren } from "react";
 import { Link } from "react-router-dom";
 import { PageHeader } from "./PageHeader";
+import { recordRuntimeDiagnostic } from "../../services/runtimeDiagnostics";
 
 type RouteErrorBoundaryState = {
   hasError: boolean;
@@ -14,6 +15,7 @@ export class RouteErrorBoundary extends Component<PropsWithChildren, RouteErrorB
   }
 
   componentDidCatch() {
+    recordRuntimeDiagnostic("page-render-error", "A route failed to render");
     console.error("WheelForge could not render the current page.");
   }
 
