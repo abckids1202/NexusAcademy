@@ -54,6 +54,13 @@ for (const route of routes) {
   resolvedUrls.push(await fetchRoute(route));
 }
 
+const healthResponse = await fetch(`${baseUrl}/health.json`, { redirect: "follow" });
+assert.ok(healthResponse.ok, `/health.json returned HTTP ${healthResponse.status}.`);
+assert.match(healthResponse.headers.get("content-type") ?? "", /application\/json/i, "/health.json is not JSON.");
+assert.equal(healthResponse.headers.get("cache-control"), "no-store", "/health.json must not be cached.");
+const health = await healthResponse.json();
+assert.deepEqual(health, { service: "wheelforge", status: "ok" }, "/health.json has an unexpected payload.");
+
 if (process.env.NODE_ENV === "production") {
   for (const resolvedUrl of resolvedUrls) {
     assert.equal(new URL(resolvedUrl).protocol, "https:", `Production route redirected to non-HTTPS URL: ${resolvedUrl}`);

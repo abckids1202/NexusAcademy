@@ -46,6 +46,8 @@ This verifies the root and every primary application route return the HTML app s
 
 The same route and RLS checks can be run from GitHub Actions with the manual `WheelForge staging verification` workflow. Provide the deployment origin as the workflow input and configure these secrets in the `staging` environment: `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and `SUPABASE_TEST_PASSWORD`. The service-role key is used only by the staging verifier and is never exposed to the browser build.
 
+The deployment also exposes `/health.json` as a small uncached uptime target. It must return JSON with `{ "service": "wheelforge", "status": "ok" }`. This confirms that the host is serving the expected static artifact; it is not a substitute for browser, Supabase, or client-error monitoring.
+
 After deployment, verify:
 
 1. `/`, `/spin`, `/chains`, `/templates`, `/tournaments`, `/participants`, and `/settings` load directly in a fresh browser tab.
