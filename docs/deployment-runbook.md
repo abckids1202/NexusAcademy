@@ -32,6 +32,16 @@ Never configure a Supabase service-role key as a `VITE_*` variable. The checked-
 
 ## Staging verification
 
+Run the deployed-site smoke check from a trusted operator shell after the host is configured:
+
+```powershell
+$env:DEPLOYMENT_URL = "https://<staging-origin>"
+$env:NODE_ENV = "production"
+npm run verify:deployment
+```
+
+This verifies the root and every primary application route return the HTML app shell, follow the SPA fallback, use HTTPS, and include all required security headers. It does not replace the interactive checks below.
+
 After deployment, verify:
 
 1. `/`, `/spin`, `/chains`, `/templates`, `/tournaments`, `/participants`, and `/settings` load directly in a fresh browser tab.
