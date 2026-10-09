@@ -2,7 +2,7 @@
 
 **Last verified:** October 9, 2026
 
-**Verified commit:** `d93ca0a fix pgTAP mutation assertions`
+**Verified commit:** `ad9a016 cover diagnostics export in browser tests`
 
 ## Verified in the current checkout
 
@@ -10,10 +10,10 @@
 - `npm run test:coverage` passes with 144 tests across 14 source test files and the global coverage gate (70% statements, 65% branches, 75% functions, 75% lines).
 - `npm run audit` passes with no high or critical advisories.
 - `npm run build` passes.
-- `npm run test:e2e` passes with 54 Chromium journeys.
+- `npm run test:e2e` passes with 55 Chromium journeys.
 - `npm run test:e2e:cloud` passes with 2 mocked cloud journeys.
 - `npm run verify:deployment:config` passes with the SPA fallback and six required security headers.
-- `npm run check` passes on the verified commit, including 54 Chromium journeys and 2 mocked cloud journeys.
+- `npm run check` passes on the verified commit, including 55 Chromium journeys and 2 mocked cloud journeys.
 - The account-deletion Edge Function rejects non-POST requests, and the staging verifier covers authorized and cross-account workspace mutations; live Supabase execution remains required.
 - The database-level pgTAP policy test covers authenticated owner CRUD, cross-account insert/update/delete denial, and anonymous read/write denial; it still requires a local or hosted Supabase test runner.
 - `npm run test:e2e:cross-browser` provides 3 Firefox, 3 desktop WebKit, 3 mobile Chromium, and 3 mobile WebKit smoke journeys in CI for routing, the shell, templates, and tournament setup; full feature coverage remains Chromium-based.
