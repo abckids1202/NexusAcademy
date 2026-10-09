@@ -2,7 +2,9 @@
 
 **Last verified:** October 9, 2026
 
-**Verified commit:** `06d18f4 add privacy and data transparency page`
+**Verified commit:** `73a01b9 document repository and operations boundaries`
+
+**Latest CI evidence:** [application workflow run 37956039369](https://github.com/abckids1202/NexusAcademy/actions/runs/37956039369) and [database workflow run 37956039366](https://github.com/abckids1202/NexusAcademy/actions/runs/37956039366), both passed on this commit.
 
 ## Verified in the current checkout
 
