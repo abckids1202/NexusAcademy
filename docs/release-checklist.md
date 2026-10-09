@@ -27,6 +27,7 @@ Use this checklist for each staging release and for the production promotion dec
 - [ ] Firefox and WebKit smoke suites pass in CI or an equivalent supported environment.
 - [ ] Mobile Chromium and mobile WebKit smoke suites pass.
 - [ ] CI run URL and artifact locations: `________________`
+- [ ] Supabase pgTAP database-test workflow passes for the release commit.
 
 ## Hosting and Deployment
 

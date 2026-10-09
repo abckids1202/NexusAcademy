@@ -1,0 +1,30 @@
+name: WheelForge database tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  pgtap:
+    name: Run Supabase pgTAP policy tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start local Supabase
+        run: supabase start
+
+      - name: Run database tests
+        run: supabase test db
