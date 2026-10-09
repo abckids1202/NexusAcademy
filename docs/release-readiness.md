@@ -2,7 +2,7 @@
 
 **Last verified:** October 9, 2026
 
-**Verified commit:** `1b02525 add privacy-conscious runtime diagnostics`
+**Verified commit:** `042f9d0 harden cloud account deletion and RLS checks`
 
 ## Verified in the current checkout
 
@@ -14,6 +14,7 @@
 - `npm run test:e2e:cloud` passes with 2 mocked cloud journeys.
 - `npm run verify:deployment:config` passes with the SPA fallback and six required security headers.
 - `npm run check` passes on the verified commit, including 54 Chromium journeys and 2 mocked cloud journeys.
+- The account-deletion Edge Function rejects non-POST requests, and the staging verifier covers authorized and cross-account workspace mutations; live Supabase execution remains required.
 - `npm run test:e2e:cross-browser` provides 3 Firefox, 3 desktop WebKit, 3 mobile Chromium, and 3 mobile WebKit smoke journeys in CI for routing, the shell, templates, and tournament setup; full feature coverage remains Chromium-based.
 - Local Windows verification currently passes WebKit smoke tests; Playwright Firefox cannot launch in this environment (`spawn UNKNOWN`), so Firefox evidence must come from the Ubuntu CI runner or a manual Firefox session.
 - Vitest is scoped to `src/**/*.test.ts`; legacy repository tests cannot silently contaminate the WheelForge gate.
