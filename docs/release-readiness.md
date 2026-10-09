@@ -2,9 +2,9 @@
 
 **Last verified:** October 9, 2026
 
-**Verified commit:** `53f3636 validate deployment security policy values`
+**Verified commit:** `0f09ac7 add client bundle secret release gate`
 
-**Latest full application evidence:** `npm run check` passed on `d573fb9` immediately before the security-verifier-only change. The targeted checks on `53f3636` also pass: lint, Node script validation, and static deployment configuration verification.
+**Latest full application evidence:** `npm run check` passed on `0f09ac7`, including the client-bundle secret scan.
 
 ## Verified in the current checkout
 
@@ -16,7 +16,7 @@
 - `npm run test:e2e:cloud` passes with 2 mocked cloud journeys.
 - `npm run verify:deployment:config` passes with the SPA fallback and six required security headers, including policy-value validation for CSP, HSTS, frame, referrer, permissions, and content-type protections.
 - `npm run verify:client-bundle` passes across 43 generated assets and rejects service-role markers, Supabase secret-key markers, configured secret values, and private-key material in browser output.
-- `npm run check` passes on the immediately preceding application commit, including 55 Chromium journeys and 2 mocked cloud journeys; the latest commit changes only deployment-verifier scripts and passes targeted lint/config checks.
+- `npm run check` passes on the verified commit, including 55 Chromium journeys, 2 mocked cloud journeys, and the generated-client secret scan.
 - The account-deletion Edge Function rejects non-POST requests, and the staging verifier covers authorized and cross-account workspace mutations; live Supabase execution remains required.
 - The database-level pgTAP policy test covers authenticated owner CRUD, cross-account insert/update/delete denial, and anonymous read/write denial; it still requires a local or hosted Supabase test runner.
 - `npm run test:e2e:cross-browser` provides 3 Firefox, 3 desktop WebKit, 3 mobile Chromium, and 3 mobile WebKit smoke journeys in CI for routing, the shell, templates, and tournament setup; full feature coverage remains Chromium-based.
