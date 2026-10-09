@@ -34,7 +34,6 @@ export function Sidebar() {
 
           return (
             <NavLink
-              aria-label={item.label}
               className={({ isActive }) =>
                 isActive ? "sidebar-link active" : "sidebar-link"
               }
