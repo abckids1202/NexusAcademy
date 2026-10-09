@@ -2,9 +2,9 @@
 
 **Last verified:** October 9, 2026
 
-**Verified commit:** `73a01b9 document repository and operations boundaries`
+**Verified commit:** `53f3636 validate deployment security policy values`
 
-**Latest CI evidence:** [application workflow run 37956039369](https://github.com/abckids1202/NexusAcademy/actions/runs/37956039369) and [database workflow run 37956039366](https://github.com/abckids1202/NexusAcademy/actions/runs/37956039366), both passed on this commit.
+**Latest full application evidence:** `npm run check` passed on `d573fb9` immediately before the security-verifier-only change. The targeted checks on `53f3636` also pass: lint, Node script validation, and static deployment configuration verification.
 
 ## Verified in the current checkout
 
@@ -14,8 +14,8 @@
 - `npm run build` passes.
 - `npm run test:e2e` passes with 55 Chromium journeys.
 - `npm run test:e2e:cloud` passes with 2 mocked cloud journeys.
-- `npm run verify:deployment:config` passes with the SPA fallback and six required security headers.
-- `npm run check` passes on the verified commit, including 55 Chromium journeys and 2 mocked cloud journeys.
+- `npm run verify:deployment:config` passes with the SPA fallback and six required security headers, including policy-value validation for CSP, HSTS, frame, referrer, permissions, and content-type protections.
+- `npm run check` passes on the immediately preceding application commit, including 55 Chromium journeys and 2 mocked cloud journeys; the latest commit changes only deployment-verifier scripts and passes targeted lint/config checks.
 - The account-deletion Edge Function rejects non-POST requests, and the staging verifier covers authorized and cross-account workspace mutations; live Supabase execution remains required.
 - The database-level pgTAP policy test covers authenticated owner CRUD, cross-account insert/update/delete denial, and anonymous read/write denial; it still requires a local or hosted Supabase test runner.
 - `npm run test:e2e:cross-browser` provides 3 Firefox, 3 desktop WebKit, 3 mobile Chromium, and 3 mobile WebKit smoke journeys in CI for routing, the shell, templates, and tournament setup; full feature coverage remains Chromium-based.
@@ -24,7 +24,7 @@
 - GitHub Actions runs lint, unit tests with the coverage gate, audit, build, Chromium browser tests, cross-browser smoke tests, cloud-mock tests, and uploads coverage and Playwright artifacts.
 - GitHub Actions also starts a local Supabase stack and runs the committed pgTAP RLS policy tests on pushes and pull requests; the local Windows checkout cannot run this job without Docker and the Supabase CLI.
 - The pgTAP database-test workflow passed for the verified commit, including the strengthened owner CRUD and cross-account isolation assertions.
-- A static `/health.json` endpoint, scheduled deployment monitor workflow, and privacy-conscious local diagnostics export are present; monitoring activation still requires a configured deployment URL and an external client-error service decision.
+- A static `/health.json` endpoint, scheduled deployment monitor workflow, and privacy-conscious local diagnostics export are present; the live verifier covers twelve public/deep-link routes and validates security-policy values. Monitoring activation still requires a configured deployment URL and an external client-error service decision.
 - A `/privacy` route documents local storage, optional cloud backup, user controls, and the remaining legal-review boundary before public launch.
 - Page routes are lazy-loaded; the main JavaScript chunk is approximately 371 kB minified.
 - A shared local participant directory supports profile CRUD, archive/restore, search, backup persistence, tournament roster reuse, and group metadata carried into reviewed brackets.

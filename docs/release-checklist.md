@@ -38,7 +38,7 @@ Use this checklist for each staging release and for the production promotion dec
 - [ ] Supported Node version is configured.
 - [ ] Only browser-safe `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` variables are exposed to the build.
 - [ ] No service-role key or other secret appears in client bundles, logs, or repository files.
-- [ ] SPA fallback works for `/`, `/spin`, `/chains`, `/templates`, `/tournaments`, `/participants`, and `/settings`.
+- [ ] SPA fallback works for `/`, `/dashboard`, `/spin`, `/wheels/new`, `/chains`, `/chains/new`, `/templates`, `/tournaments`, `/participants`, `/settings`, `/privacy`, and a representative chain-run deep link.
 - [ ] `npm run verify:deployment` passes against the staging URL.
 - [ ] HTTPS, CSP, HSTS, frame, referrer, and content-type headers are present.
 - [ ] Deployment URL, headers, route results, and commit SHA are recorded.
