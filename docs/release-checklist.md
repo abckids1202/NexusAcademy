@@ -97,6 +97,7 @@ Use this checklist for each staging release and for the production promotion dec
 
 ## Decision
 
+- [ ] Privacy/data notice, legal contact, retention policy, and required terms are reviewed for the target launch jurisdiction.
 - [ ] **Approved for production**
 - [ ] **Approved for controlled beta only**
 - [ ] **Blocked pending remediation**

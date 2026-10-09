@@ -2,7 +2,7 @@
 
 **Last verified:** October 9, 2026
 
-**Verified commit:** `ad9a016 cover diagnostics export in browser tests`
+**Verified commit:** `06d18f4 add privacy and data transparency page`
 
 ## Verified in the current checkout
 
@@ -23,6 +23,7 @@
 - GitHub Actions also starts a local Supabase stack and runs the committed pgTAP RLS policy tests on pushes and pull requests; the local Windows checkout cannot run this job without Docker and the Supabase CLI.
 - The pgTAP database-test workflow passed for the verified commit, including the strengthened owner CRUD and cross-account isolation assertions.
 - A static `/health.json` endpoint, scheduled deployment monitor workflow, and privacy-conscious local diagnostics export are present; monitoring activation still requires a configured deployment URL and an external client-error service decision.
+- A `/privacy` route documents local storage, optional cloud backup, user controls, and the remaining legal-review boundary before public launch.
 - Page routes are lazy-loaded; the main JavaScript chunk is approximately 371 kB minified.
 - A shared local participant directory supports profile CRUD, archive/restore, search, backup persistence, tournament roster reuse, and group metadata carried into reviewed brackets.
 - Tournament setup supports per-participant group/team labels, roles, seat numbers, random seat assignment, manual seed ordering, and metadata-preserving setup edits.
