@@ -12,7 +12,20 @@ if (process.env.NODE_ENV === "production") {
 }
 
 const baseUrl = origin.toString().replace(/\/$/, "");
-const routes = ["/", "/spin", "/chains", "/templates", "/tournaments", "/participants", "/settings"];
+const routes = [
+  "/",
+  "/dashboard",
+  "/spin",
+  "/wheels/new",
+  "/chains",
+  "/chains/new",
+  "/templates",
+  "/tournaments",
+  "/participants",
+  "/settings",
+  "/privacy",
+  "/chains/demo_chain_fantasy_story/run",
+];
 const requiredHeaders = [
   "content-security-policy",
   "referrer-policy",
