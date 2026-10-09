@@ -17,6 +17,24 @@ test("cloud backup is optional and local settings remain available", async ({ pa
   }
 });
 
+test("support diagnostics export excludes workspace data", async ({ page }) => {
+  await page.goto("/settings");
+  const diagnosticsCard = page.locator(".shell-card").filter({ has: page.getByRole("heading", { name: "Support diagnostics" }) });
+  await expect(diagnosticsCard).toContainText("0 diagnostic events stored");
+  const [download] = await Promise.all([
+    page.waitForEvent("download"),
+    diagnosticsCard.getByRole("button", { name: "Download diagnostics" }).click(),
+  ]);
+  expect(download.suggestedFilename()).toMatch(/^wheelforge-diagnostics-\d{4}-\d{2}-\d{2}\.json$/);
+  const diagnostics = JSON.parse(await readFile((await download.path())!, "utf8")) as {
+    schema: number;
+    events: unknown[];
+  };
+  expect(diagnostics.schema).toBe(1);
+  expect(diagnostics.events).toEqual([]);
+  expect(JSON.stringify(diagnostics)).not.toContain("wheelforge_data_v1");
+});
+
 test("history cleanup removes saved results without removing active generator sessions", async ({ page }) => {
   await page.goto("/settings");
   await expect(page.getByRole("button", { name: "Clear saved history" })).toBeVisible();
