@@ -1,0 +1,62 @@
+name: WheelForge staging verification
+
+on:
+  workflow_dispatch:
+    inputs:
+      deployment_url:
+        description: "Deployed staging origin, including https://"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  deployed-site:
+    name: Verify deployed site
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify staging deployment
+        env:
+          DEPLOYMENT_URL: ${{ inputs.deployment_url }}
+          NODE_ENV: production
+        run: npm run verify:deployment
+
+  supabase:
+    name: Verify Supabase staging isolation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: staging
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify two-account RLS isolation
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_TEST_PASSWORD: ${{ secrets.SUPABASE_TEST_PASSWORD }}
+        run: npm run verify:supabase:staging

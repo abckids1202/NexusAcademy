@@ -42,6 +42,8 @@ npm run verify:deployment
 
 This verifies the root and every primary application route return the HTML app shell, follow the SPA fallback, use HTTPS, and include all required security headers. It does not replace the interactive checks below.
 
+The same route and RLS checks can be run from GitHub Actions with the manual `WheelForge staging verification` workflow. Provide the deployment origin as the workflow input and configure these secrets in the `staging` environment: `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and `SUPABASE_TEST_PASSWORD`. The service-role key is used only by the staging verifier and is never exposed to the browser build.
+
 After deployment, verify:
 
 1. `/`, `/spin`, `/chains`, `/templates`, `/tournaments`, `/participants`, and `/settings` load directly in a fresh browser tab.
