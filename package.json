@@ -17,7 +17,7 @@
     "verify:supabase:staging": "node scripts/verify-supabase-staging.mjs",
     "verify:deployment:config": "node scripts/verify-static-deployment.mjs",
     "verify:deployment": "node scripts/verify-deployment.mjs",
-    "test:e2e:install": "playwright install chromium",
+    "test:e2e:install": "playwright install chromium firefox webkit",
     "check": "npm run lint && npm run test:coverage && npm run audit && npm run build && npm run verify:deployment:config && npm run test:e2e && npm run test:e2e:cloud"
   },
   "dependencies": {
