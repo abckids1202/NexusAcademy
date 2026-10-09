@@ -59,6 +59,8 @@ Use this checklist for each staging release and for the production promotion dec
 
 ## Manual Product QA
 
+Use the reproducible [manual release QA matrix](manual-release-qa.md) and attach its completed evidence to the release record.
+
 - [ ] Keyboard-only walkthrough completes for wheel creation, spin, result actions, templates, chains, participants, tournaments, settings, export, and import.
 - [ ] Screen-reader walkthrough covers landmarks, headings, dialogs, live result announcements, form errors, and canvas fallback content.
 - [ ] Focus is visible and trapped correctly in dialogs; Escape and close controls behave consistently.
