@@ -2,7 +2,7 @@
 
 **Last verified:** October 9, 2026
 
-**Verified commit:** `ed78000 add deployment health endpoint`
+**Verified commit:** `1b02525 add privacy-conscious runtime diagnostics`
 
 ## Verified in the current checkout
 

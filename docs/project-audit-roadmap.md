@@ -238,7 +238,7 @@ For browser verification, Playwright's [web-server configuration](https://playwr
 
 On October 9, 2026, from the writable checkout at `C:\Users\charl\OneDrive\Desktop\WheelForge`:
 
-- Current evidence: lint, 142 unit tests with the 70/65/75/75 coverage gate, TypeScript/Vite production build, static deployment configuration validation, 54 Chromium journeys including malformed local-data recovery, history cleanup, attendance isolation, explicit forfeit and undo/correction, best-of series, double-elimination reset/bye coverage, dependent-result coverage, participant-directory wheel imports, and axe scanning, plus 2 mocked-cloud password recovery journeys. Firefox, desktop WebKit, mobile Chromium, and mobile WebKit each have three smoke journeys in the CI workflow.
+- Current evidence: lint, 144 unit tests with the 70/65/75/75 coverage gate, TypeScript/Vite production build, static deployment configuration validation, 54 Chromium journeys including malformed local-data recovery, history cleanup, attendance isolation, explicit forfeit and undo/correction, best-of series, double-elimination reset/bye coverage, dependent-result coverage, participant-directory wheel imports, and axe scanning, plus 2 mocked-cloud password recovery journeys. Firefox, desktop WebKit, mobile Chromium, and mobile WebKit each have three smoke journeys in the CI workflow.
 - `npm audit`: 0 dependency vulnerabilities.
 
 This verifies the local code quality gate only. It does not cover a production deployment, full accessibility conformance or manual screen-reader/browser testing, all browser journeys, backend security, or certified randomness.
