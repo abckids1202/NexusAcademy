@@ -13,7 +13,7 @@ npm run dev
 
 ```bash
 npm run lint
-npm test
+npm run test:coverage
 npm run build
 ```
 
@@ -26,6 +26,8 @@ npm run check
 ```
 
 `npm run check` runs lint, unit tests with the coverage gate, the dependency audit, the production build, static deployment configuration validation, Chromium browser tests, and cloud-mock tests. The browser suite starts its own Vite server on port 5199. GitHub Actions additionally runs the Firefox/WebKit smoke suite and uploads coverage and Playwright artifacts.
+
+After deploying to staging or production, set `DEPLOYMENT_URL` and run `npm run verify:deployment` to check the live SPA routes, HTML shell, HTTPS, and required security headers. The manual GitHub Actions workflow provides the same deployed-site check plus real Supabase staging RLS verification when its environment secrets are configured.
 
 To run the cross-browser smoke suite locally:
 

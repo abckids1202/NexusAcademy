@@ -1,6 +1,6 @@
 # WheelForge Project Audit and Product Roadmap
 
-**Reviewed:** October 8, 2026
+**Reviewed:** October 9, 2026
 **Project reviewed:** `C:\Users\charl\OneDrive\Desktop\WheelForge`
 
 ## Product Direction
@@ -54,7 +54,7 @@ The near-term product goal should be **a complete, dependable local product**. A
 - The cloud path has not been exercised against a live project or local Supabase stack in this environment: Supabase CLI, Docker, and `.env.local` are absent. The app adapter has mocked unit tests, conflict-aware writes, and the migration has a committed pgTAP policy test; run that database test and deploy/test the account deletion Edge Function, conflict flow, and password recovery against a disposable project before rollout.
 - Same-tab writes and cross-tab storage events feed cached `useSyncExternalStore` selectors used by the dashboard, spin view, chain-builder wheel picker, and tournament list/detail. Browser journeys prove new records appear in already-open peer tabs. Local backup review detects a changed workspace snapshot and asks for a fresh choice. Wheel/generator/tournament setup drafts compare their captured `updatedAt` with the latest saved version before overwrite; stale drafts stay visible and require reload or an explicit copy/discard. Preference changes merge as individual patches. Browser tests cover these flows. This remains optimistic version checking rather than atomic compare-and-swap; simultaneous cross-process writes and conflicts in other workflows still need a stronger storage transaction design.
 - The wheel canvas now has an image role and descriptive accessible name; a semantic option/chance list provides a non-canvas representation, and a polite live region announces spin start and result odds. A fully interactive non-canvas visualization and broad screen-reader/manual assistive-technology testing remain outstanding.
-- The project has focused logic tests and a small Playwright Chromium browser suite for high-risk end-to-end journeys. Coverage thresholds and a documented deployment/monitoring process are still absent. Passing lint/build/browser checks is a useful baseline, not a production-readiness certificate.
+- The project has focused logic tests, a coverage gate, a Playwright Chromium browser suite for high-risk end-to-end journeys, cross-browser smoke configuration, deployment configuration validation, a deployed-site smoke script, and a documented deployment runbook. Monitoring, live deployment evidence, live cloud evidence, recovery-drill evidence, and manual browser/accessibility verification remain outstanding. Passing automated checks is a useful baseline, not a production-readiness certificate.
 - `product-plan.md`, `roadmap.md`, and `backend-plan.md` do not reflect the current application. This document and `docs/release-readiness.md` are the current product/release references; add deployment, recovery, and browser support evidence before external release.
 
 ### Progress since this audit was first written
@@ -236,9 +236,9 @@ For browser verification, Playwright's [web-server configuration](https://playwr
 
 ## Verification Baseline
 
-On October 8, 2026, from the writable checkout at `C:\Users\charl\OneDrive\Desktop\WheelForge`:
+On October 9, 2026, from the writable checkout at `C:\Users\charl\OneDrive\Desktop\WheelForge`:
 
-- Current evidence: lint, 136 unit tests, TypeScript/Vite production build, 52 Chromium journeys including malformed local-data recovery, attendance isolation, explicit forfeit and undo/correction, best-of series, double-elimination reset/bye coverage, dependent-result coverage, and axe scanning, plus 2 mocked-cloud password recovery journeys. Firefox and WebKit have three smoke journeys each in the CI workflow.
+- Current evidence: lint, 141 unit tests with the 70/65/75/75 coverage gate, TypeScript/Vite production build, static deployment configuration validation, 52 Chromium journeys including malformed local-data recovery, attendance isolation, explicit forfeit and undo/correction, best-of series, double-elimination reset/bye coverage, dependent-result coverage, and axe scanning, plus 2 mocked-cloud password recovery journeys. Firefox and WebKit have three smoke journeys each in the CI workflow.
 - `npm audit`: 0 dependency vulnerabilities.
 
 This verifies the local code quality gate only. It does not cover a production deployment, full accessibility conformance or manual screen-reader/browser testing, all browser journeys, backend security, or certified randomness.
