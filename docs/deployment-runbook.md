@@ -48,6 +48,8 @@ The same route and RLS checks can be run from GitHub Actions with the manual `Wh
 
 The deployment also exposes `/health.json` as a small uncached uptime target. It must return JSON with `{ "service": "wheelforge", "status": "ok" }`. This confirms that the host is serving the expected static artifact; it is not a substitute for browser, Supabase, or client-error monitoring.
 
+For recurring HTTP checks, configure the repository variable `DEPLOYMENT_URL` with the staging or production origin. The scheduled `WheelForge deployment monitor` workflow then runs every 15 minutes and checks the app shell, deep-link routes, security headers, module asset, HTTPS, and `/health.json`. The workflow can also be run manually with a temporary URL override. Until `DEPLOYMENT_URL` is configured, the scheduled job remains skipped.
+
 After deployment, verify:
 
 1. `/`, `/spin`, `/chains`, `/templates`, `/tournaments`, `/participants`, and `/settings` load directly in a fresh browser tab.

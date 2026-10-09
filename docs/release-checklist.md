@@ -86,6 +86,7 @@ Use this checklist for each staging release and for the production promotion dec
 
 - [ ] Client error tracking is configured and tested with a non-user-facing test event.
 - [ ] Uptime monitoring checks the deployed origin and a representative deep link.
+- [ ] Repository variable `DEPLOYMENT_URL` is configured and the scheduled deployment monitor has produced a passing run.
 - [ ] Deployment failure and outage notifications have an owner.
 - [ ] Production logs can be reviewed without exposing backup payloads or secrets.
 - [ ] Incident owner and escalation path are documented.
