@@ -26,20 +26,60 @@ select throws_ok(
   null,
   'second user cannot insert a workspace for another user'
 );
-select is((with changed as (
-  update public.wheelforge_workspaces set payload = '{"version":1}'
-  where user_id = '10000000-0000-4000-8000-000000000001' returning 1
-) select count(*)::integer from changed), 0, 'second user cannot update the first user row');
-select is((with removed as (
-  delete from public.wheelforge_workspaces where user_id = '10000000-0000-4000-8000-000000000001' returning 1
-) select count(*)::integer from removed), 0, 'second user cannot delete the first user row');
-select is((with changed as (
-  update public.wheelforge_workspaces set payload = '{"version":1,"marker":"authorized"}'
-  where user_id = '10000000-0000-4000-8000-000000000002' returning 1
-) select count(*)::integer from changed), 1, 'owner can update their own workspace');
-select is((with removed as (
-  delete from public.wheelforge_workspaces where user_id = '10000000-0000-4000-8000-000000000002' returning 1
-) select count(*)::integer from removed), 1, 'owner can delete their own workspace');
+select lives_ok(
+  $$
+  do $body$
+  declare affected integer;
+  begin
+    update public.wheelforge_workspaces set payload = '{"version":1}'
+    where user_id = '10000000-0000-4000-8000-000000000001';
+    get diagnostics affected = row_count;
+    if affected <> 0 then raise exception 'cross-account update affected % rows', affected; end if;
+  end;
+  $body$;
+  $$,
+  'second user cannot update the first user row'
+);
+select lives_ok(
+  $$
+  do $body$
+  declare affected integer;
+  begin
+    delete from public.wheelforge_workspaces where user_id = '10000000-0000-4000-8000-000000000001';
+    get diagnostics affected = row_count;
+    if affected <> 0 then raise exception 'cross-account delete affected % rows', affected; end if;
+  end;
+  $body$;
+  $$,
+  'second user cannot delete the first user row'
+);
+select lives_ok(
+  $$
+  do $body$
+  declare affected integer;
+  begin
+    update public.wheelforge_workspaces set payload = '{"version":1,"marker":"authorized"}'
+    where user_id = '10000000-0000-4000-8000-000000000002';
+    get diagnostics affected = row_count;
+    if affected <> 1 then raise exception 'owner update affected % rows', affected; end if;
+  end;
+  $body$;
+  $$,
+  'owner can update their own workspace'
+);
+select lives_ok(
+  $$
+  do $body$
+  declare affected integer;
+  begin
+    delete from public.wheelforge_workspaces where user_id = '10000000-0000-4000-8000-000000000002';
+    get diagnostics affected = row_count;
+    if affected <> 1 then raise exception 'owner delete affected % rows', affected; end if;
+  end;
+  $body$;
+  $$,
+  'owner can delete their own workspace'
+);
 
 reset role;
 set local role anon;
