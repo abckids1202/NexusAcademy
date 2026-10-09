@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowDown, ArrowUp, Upload } from "lucide-react";
+import { ArrowDown, ArrowUp, ContactRound, Upload } from "lucide-react";
 import { PageHeader } from "../components/common/PageHeader";
 import { ShellCard } from "../components/common/ShellCard";
 import {
@@ -17,6 +17,7 @@ import { validateWheel } from "../utils/validation";
 import { parseOptionLines } from "../utils/optionImport";
 import { parseWheelOptionCsv, type CsvOptionPreview } from "../utils/csvImport";
 import { useDataRevision } from "../hooks/useDataRevision";
+import { useParticipants } from "../hooks/useParticipants";
 
 type WheelEditorPageProps = {
   mode: "create" | "edit";
@@ -57,7 +58,17 @@ export function WheelEditorPage({ mode }: WheelEditorPageProps) {
   const [pastedOptions, setPastedOptions] = useState("");
   const [optionMessage, setOptionMessage] = useState("");
   const [csvPreview, setCsvPreview] = useState<CsvOptionPreview | null>(null);
+  const [selectedParticipantIds, setSelectedParticipantIds] = useState<string[]>([]);
+  const participants = useParticipants(false);
   const activeOptions = useMemo(() => getActiveOptions(wheel.options), [wheel.options]);
+  const existingOptionLabels = useMemo(
+    () => new Set(wheel.options.map((option) => option.label.trim().toLocaleLowerCase())),
+    [wheel.options],
+  );
+  const selectedParticipants = useMemo(
+    () => participants.filter((participant) => selectedParticipantIds.includes(participant.id)),
+    [participants, selectedParticipantIds],
+  );
   const parsedOptions = useMemo(() => parseOptionLines(pastedOptions), [pastedOptions]);
   const validationErrors = useMemo(() => validateWheel(wheel), [wheel]);
   const hasStaleDraft = !isCreate && baseUpdatedAt !== undefined && existingWheel?.updatedAt !== baseUpdatedAt;
@@ -103,6 +114,25 @@ export function WheelEditorPage({ mode }: WheelEditorPageProps) {
     }));
     setOptionMessage(`Added ${parsedOptions.length} options.`);
     setPastedOptions("");
+  }
+
+  function addDirectoryParticipants() {
+    const availableParticipants = selectedParticipants.filter(
+      (participant) => !existingOptionLabels.has(participant.name.trim().toLocaleLowerCase()),
+    );
+    if (availableParticipants.length === 0) return;
+    setWheel((current) => ({
+      ...current,
+      options: [
+        ...current.options,
+        ...availableParticipants.map((participant, index) =>
+          createWheelOption(participant.name, current.options.length + index),
+        ),
+      ],
+    }));
+    const skipped = selectedParticipants.length - availableParticipants.length;
+    setOptionMessage(`${availableParticipants.length} participant${availableParticipants.length === 1 ? "" : "s"} added${skipped > 0 ? `; ${skipped} already on this wheel skipped` : ""}.`);
+    setSelectedParticipantIds([]);
   }
 
   async function previewOptionCsv(file?: File) {
@@ -323,6 +353,37 @@ export function WheelEditorPage({ mode }: WheelEditorPageProps) {
         </ShellCard>
         <ShellCard title="Options" description="Editable wheel options with colors, weights, active state, and ordering.">
           <div className="bulk-option-entry">
+            <fieldset className="directory-option-entry">
+              <legend><ContactRound size={16} /> Add from participant directory</legend>
+              {participants.length === 0 ? (
+                <p className="muted">No active participants yet. Add people from the <Link to="/participants">participant directory</Link>.</p>
+              ) : (
+                <>
+                  <div className="directory-option-list">
+                    {participants.map((participant) => {
+                      const alreadyAdded = existingOptionLabels.has(participant.name.trim().toLocaleLowerCase());
+                      return (
+                        <label className="directory-option" key={participant.id}>
+                          <input
+                            checked={selectedParticipantIds.includes(participant.id)}
+                            disabled={alreadyAdded}
+                            type="checkbox"
+                            onChange={(event) => setSelectedParticipantIds((current) => event.target.checked
+                              ? [...current, participant.id]
+                              : current.filter((id) => id !== participant.id))}
+                          />
+                          <span>{participant.name}</span>
+                          {alreadyAdded && <small>Already added</small>}
+                        </label>
+                      );
+                    })}
+                  </div>
+                  <button className="secondary-link" type="button" onClick={addDirectoryParticipants} disabled={selectedParticipants.length === 0}>
+                    Add {selectedParticipants.length || "selected"} participant{selectedParticipants.length === 1 ? "" : "s"}
+                  </button>
+                </>
+              )}
+            </fieldset>
             <label className="field-stack" htmlFor="bulk-wheel-options">
               <span>Paste options, one per line</span>
               <textarea

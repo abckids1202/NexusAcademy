@@ -55,3 +55,26 @@ test("tournament creation can add active directory participants", async ({ page 
   await expect(page.getByRole("region", { name: "Tournament preview" })).toContainText("Gold team");
   await expect(page.getByRole("region", { name: "Tournament preview" })).toContainText("Captain · Seat 7");
 });
+
+test("wheel creation can add active directory participants without duplicates", async ({ page }) => {
+  await page.goto("/participants");
+  await page.getByLabel("Name").fill("Riley Morgan");
+  await page.getByRole("button", { name: "Add participant" }).click();
+  await page.getByLabel("Name").fill("Casey Wong");
+  await page.getByRole("button", { name: "Add participant" }).click();
+
+  await page.goto("/wheels/new");
+  await page.getByRole("checkbox", { name: "Riley Morgan" }).check();
+  await page.getByRole("checkbox", { name: "Casey Wong" }).check();
+  await page.getByRole("button", { name: "Add 2 participants" }).click();
+
+  const optionInputs = page.locator(".option-editor-row input.text-field");
+  await expect(optionInputs).toHaveCount(5);
+  await expect(optionInputs.nth(0)).toHaveValue("Option A");
+  await expect(optionInputs.nth(1)).toHaveValue("Option B");
+  await expect(optionInputs.nth(2)).toHaveValue("Option C");
+  await expect(optionInputs.nth(3)).toHaveValue("Casey Wong");
+  await expect(optionInputs.nth(4)).toHaveValue("Riley Morgan");
+  await expect(page.getByRole("checkbox", { name: "Riley Morgan" })).toBeDisabled();
+  await expect(page.getByRole("checkbox", { name: "Casey Wong" })).toBeDisabled();
+});
