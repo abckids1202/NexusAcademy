@@ -1,10 +1,11 @@
-import { NavLink } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import {
   Gauge,
   Home,
   Layers3,
   Route,
   Settings,
+  ShieldCheck,
   Sparkles,
   Trophy,
   Users,
@@ -48,6 +49,10 @@ export function Sidebar() {
           );
         })}
       </nav>
+      <Link className="sidebar-privacy-link" to="/privacy" title="Privacy and data">
+        <ShieldCheck size={16} />
+        <span>Privacy &amp; data</span>
+      </Link>
     </aside>
   );
 }

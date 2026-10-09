@@ -13,6 +13,9 @@ test("deep links recover into the application shell", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Tournaments", exact: true })).toBeVisible();
   await page.goto("/settings");
   await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
+  await page.goto("/privacy");
+  await expect(page.getByRole("heading", { name: "Your WheelForge data" })).toBeVisible();
+  await expect(page.getByText(/local-first/)).toBeVisible();
 });
 
 test("template and tournament setup controls are usable", async ({ page }) => {

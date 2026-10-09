@@ -109,6 +109,13 @@ export const router = createBrowserRouter([
           return { Component: SettingsPage };
         },
       },
+      {
+        path: "privacy",
+        lazy: async () => {
+          const { PrivacyPage } = await import("./pages/PrivacyPage");
+          return { Component: PrivacyPage };
+        },
+      },
       { path: "*", element: <NotFoundPage /> },
     ],
   },
