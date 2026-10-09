@@ -36,22 +36,26 @@ if (!/<script[^>]+type="module"[^>]+src=/.test(indexHtml)) {
 const rewrite = vercel.rewrites?.some((entry) => entry.source === "/(.*)" && entry.destination === "/index.html");
 if (!rewrite) throw new Error("vercel.json must provide an SPA fallback rewrite to /index.html.");
 
-const requiredHeaders = [
-  "Content-Security-Policy",
-  "Referrer-Policy",
-  "X-Content-Type-Options",
-  "X-Frame-Options",
-  "Permissions-Policy",
-  "Strict-Transport-Security",
-];
-const configuredHeaders = new Set(
-  vercel.headers?.flatMap((entry) => entry.headers ?? []).map((entry) => entry.key) ?? [],
+const requiredHeaders = new Map([
+  ["Content-Security-Policy", (value) => value.includes("default-src 'self'") && value.includes("object-src 'none'") && value.includes("frame-ancestors 'none'") && value.includes("script-src 'self'")],
+  ["Referrer-Policy", (value) => value === "strict-origin-when-cross-origin"],
+  ["X-Content-Type-Options", (value) => value === "nosniff"],
+  ["X-Frame-Options", (value) => value === "DENY"],
+  ["Permissions-Policy", (value) => value === "camera=(), microphone=(), geolocation=()"],
+  ["Strict-Transport-Security", (value) => /^max-age=31536000(?:;|$)/.test(value) && value.includes("includeSubDomains")],
+]);
+const configuredHeaders = new Map(
+  vercel.headers?.flatMap((entry) => entry.headers ?? []).map((entry) => [entry.key, entry.value]) ?? [],
 );
-const missingHeaders = requiredHeaders.filter((header) => !configuredHeaders.has(header));
+const missingHeaders = [...requiredHeaders.keys()].filter((header) => !configuredHeaders.has(header));
 if (missingHeaders.length > 0) throw new Error(`vercel.json is missing required security headers: ${missingHeaders.join(", ")}.`);
+const weakenedHeaders = [...requiredHeaders.entries()]
+  .filter(([header, validate]) => !validate(configuredHeaders.get(header)))
+  .map(([header]) => header);
+if (weakenedHeaders.length > 0) throw new Error(`vercel.json contains weakened security headers: ${weakenedHeaders.join(", ")}.`);
 
 const healthHeader = vercel.headers?.some((entry) => entry.source === "/health.json" &&
   entry.headers?.some((header) => header.key === "Cache-Control" && header.value === "no-store"));
 if (!healthHeader) throw new Error("vercel.json must keep the health endpoint uncached.");
 
-console.log(`Static deployment configuration verified: health endpoint, ${requiredHeaders.length} security headers, SPA fallback, and ${indexHtml.length} bytes of generated HTML.`);
+console.log(`Static deployment configuration verified: health endpoint, ${requiredHeaders.size} security headers, SPA fallback, and ${indexHtml.length} bytes of generated HTML.`);

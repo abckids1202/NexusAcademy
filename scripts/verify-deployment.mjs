@@ -34,6 +34,14 @@ const requiredHeaders = [
   "permissions-policy",
   "strict-transport-security",
 ];
+const expectedHeaders = {
+  "content-security-policy": (value) => value.includes("default-src 'self'") && value.includes("object-src 'none'") && value.includes("frame-ancestors 'none'") && value.includes("script-src 'self'"),
+  "referrer-policy": (value) => value === "strict-origin-when-cross-origin",
+  "x-content-type-options": (value) => value === "nosniff",
+  "x-frame-options": (value) => value === "DENY",
+  "permissions-policy": (value) => value === "camera=(), microphone=(), geolocation=()",
+  "strict-transport-security": (value) => /^max-age=31536000(?:;|$)/.test(value) && value.includes("includeSubDomains"),
+};
 const verifiedAssets = new Set();
 
 async function fetchRoute(route) {
@@ -49,7 +57,9 @@ async function fetchRoute(route) {
   const moduleSource = html.match(/<script[^>]+type=["']module["'][^>]+src=["']([^"']+)["']/i)?.[1];
   assert.ok(moduleSource, `${route} is missing the module entry script.`);
   for (const header of requiredHeaders) {
-    assert.ok(response.headers.get(header), `${route} is missing the ${header} header.`);
+    const value = response.headers.get(header);
+    assert.ok(value, `${route} is missing the ${header} header.`);
+    assert.ok(expectedHeaders[header](value), `${route} has a weakened ${header} header: ${value}`);
   }
   const assetUrl = new URL(moduleSource, response.url).toString();
   if (!verifiedAssets.has(assetUrl)) {
