@@ -34,12 +34,14 @@ export function Sidebar() {
 
           return (
             <NavLink
+              aria-label={item.label}
               className={({ isActive }) =>
                 isActive ? "sidebar-link active" : "sidebar-link"
               }
               end={item.to === "/"}
               key={item.to}
               to={item.to}
+              title={item.label}
             >
               <Icon size={18} />
               <span>{item.label}</span>

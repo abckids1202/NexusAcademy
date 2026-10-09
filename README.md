@@ -29,7 +29,7 @@ npm run check
 
 After deploying to staging or production, set `DEPLOYMENT_URL` and run `npm run verify:deployment` to check the live SPA routes, HTML shell, HTTPS, and required security headers. The manual GitHub Actions workflow provides the same deployed-site check plus real Supabase staging RLS verification when its environment secrets are configured.
 
-To run the cross-browser smoke suite locally:
+To run the cross-browser and mobile smoke suite locally:
 
 ```bash
 npx playwright install chromium firefox webkit

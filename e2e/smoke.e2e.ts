@@ -21,7 +21,7 @@ test("template and tournament setup controls are usable", async ({ page }) => {
   await expect(page.getByRole("region", { name: "Create template pack" })).toBeVisible();
   await page.goto("/tournaments");
   await page.getByLabel("Tournament name").fill("Cross browser cup");
-  await page.getByLabel(/Participants/).fill("Avery\nJordan");
+  await page.getByRole("textbox", { name: /Participants/ }).fill("Avery\nJordan");
   await page.getByRole("button", { name: "Preview tournament" }).click();
   await expect(page.getByRole("region", { name: "Tournament preview" })).toBeVisible();
 });

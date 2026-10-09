@@ -13,6 +13,8 @@ export default defineConfig({
   projects: [
     { name: "firefox", use: { ...devices["Desktop Firefox"] } },
     { name: "webkit", use: { ...devices["Desktop Safari"] } },
+    { name: "mobile-chromium", use: { ...devices["Pixel 5"] } },
+    { name: "mobile-webkit", use: { ...devices["iPhone 13"] } },
   ],
   webServer: {
     command: "npm run dev -- --host 127.0.0.1 --port 5198 --strictPort",
