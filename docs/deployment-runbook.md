@@ -2,6 +2,8 @@
 
 This runbook describes a repeatable static deployment for the Vite application. It does not claim that a production host or Supabase project is configured; those are release tasks owned by the deployment operator.
 
+Use [the release checklist](release-checklist.md) to record evidence and sign off each staging or production release. The checklist is intentionally explicit about external verification that cannot be proven from this repository alone.
+
 ## Preflight
 
 1. Work from a clean `main` checkout and confirm the intended commit with `git log -1 --oneline`.
