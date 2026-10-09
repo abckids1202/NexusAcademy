@@ -27,4 +27,25 @@ jobs:
         run: supabase start
 
       - name: Run database tests
-        run: supabase test db
+        shell: bash
+        run: |
+          set +e
+          supabase test db 2>&1 | tee supabase-test.log
+          status=${PIPESTATUS[0]}
+          if [ "$status" -ne 0 ]; then
+            while IFS= read -r line; do
+              if [[ "$line" =~ (not\ ok|ERROR|error|failed|FATAL) ]]; then
+                echo "::error title=Supabase pgTAP::$line"
+              fi
+            done < supabase-test.log
+          fi
+          exit "$status"
+
+      - name: Upload database test log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-test-log
+          path: supabase-test.log
+          if-no-files-found: ignore
+          retention-days: 14
