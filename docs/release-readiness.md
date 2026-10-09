@@ -2,7 +2,7 @@
 
 **Last verified:** October 9, 2026
 
-**Verified commit:** `3259195 record cloud security verification baseline`
+**Verified commit:** `d93ca0a fix pgTAP mutation assertions`
 
 ## Verified in the current checkout
 
@@ -21,6 +21,7 @@
 - Vitest is scoped to `src/**/*.test.ts`; legacy repository tests cannot silently contaminate the WheelForge gate.
 - GitHub Actions runs lint, unit tests with the coverage gate, audit, build, Chromium browser tests, cross-browser smoke tests, cloud-mock tests, and uploads coverage and Playwright artifacts.
 - GitHub Actions also starts a local Supabase stack and runs the committed pgTAP RLS policy tests on pushes and pull requests; the local Windows checkout cannot run this job without Docker and the Supabase CLI.
+- The pgTAP database-test workflow passed for the verified commit, including the strengthened owner CRUD and cross-account isolation assertions.
 - A static `/health.json` endpoint, scheduled deployment monitor workflow, and privacy-conscious local diagnostics export are present; monitoring activation still requires a configured deployment URL and an external client-error service decision.
 - Page routes are lazy-loaded; the main JavaScript chunk is approximately 371 kB minified.
 - A shared local participant directory supports profile CRUD, archive/restore, search, backup persistence, tournament roster reuse, and group metadata carried into reviewed brackets.
