@@ -21,6 +21,7 @@
 - The database-level pgTAP policy test covers authenticated owner CRUD, cross-account insert/update/delete denial, and anonymous read/write denial; it still requires a local or hosted Supabase test runner.
 - `npm run test:e2e:cross-browser` provides 3 Firefox, 3 desktop WebKit, 3 mobile Chromium, and 3 mobile WebKit smoke journeys in CI for routing, the shell, templates, and tournament setup; full feature coverage remains Chromium-based.
 - Local Windows verification currently passes WebKit smoke tests; Playwright Firefox cannot launch in this environment (`spawn UNKNOWN`), so Firefox evidence must come from the Ubuntu CI runner or a manual Firefox session.
+- The local cross-browser run passes all 9 configured WebKit, mobile Chromium, and mobile WebKit smoke journeys; this remains automated smoke evidence, not a substitute for physical-device or manual Safari/accessibility QA.
 - Vitest is scoped to `src/**/*.test.ts`; legacy repository tests cannot silently contaminate the WheelForge gate.
 - GitHub Actions runs lint, unit tests with the coverage gate, audit, build, Chromium browser tests, cross-browser smoke tests, cloud-mock tests, and uploads coverage and Playwright artifacts.
 - GitHub Actions also starts a local Supabase stack and runs the committed pgTAP RLS policy tests on pushes and pull requests; the local Windows checkout cannot run this job without Docker and the Supabase CLI.
