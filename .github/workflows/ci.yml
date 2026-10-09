@@ -39,6 +39,9 @@ jobs:
       - name: Production build
         run: npm run build
 
+      - name: Verify static deployment configuration
+        run: npm run verify:deployment:config
+
       - name: Install browser engines
         run: npx playwright install --with-deps chromium firefox webkit
 
