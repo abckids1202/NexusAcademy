@@ -8,5 +8,6 @@
 - Use optimistic revision checks for local drafts and cloud backups; surface conflicts instead of silently overwriting newer data.
 - Configure exact password-reset redirect URLs, HTTPS, CSP, frame, referrer, and content-type headers before deployment.
 - Test account deletion, recovery, two-account isolation, backup restore, and rollback against staging before public release.
+- The account-deletion Edge Function accepts POST only and derives the target user from the verified JWT; keep its method restriction and test cross-account insert, update, and delete isolation against staging.
 - Keep exported backups private and avoid placing participant data, tokens, or backup payloads in logs or issue trackers.
 

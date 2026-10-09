@@ -50,6 +50,9 @@ try {
     assert.equal((await rowsFor(owner.client, owner.id)).length, 1, "Owner could not read its own workspace.");
     assert.equal((await rowsFor(owner.client, other.id)).length, 0, "A user can read another user's workspace.");
 
+    const { error: crossInsertError } = await owner.client.from("wheelforge_workspaces").insert({ user_id: other.id, payload });
+    assert.ok(crossInsertError, "A user can insert another user's workspace.");
+
     const { data: updatedRows, error: updateError } = await owner.client
       .from("wheelforge_workspaces")
       .update({ payload: { ...payload, marker: "unauthorized" } })
@@ -65,6 +68,20 @@ try {
       .select("user_id");
     if (deleteError) throw deleteError;
     assert.equal(deletedRows?.length ?? 0, 0, "A user can delete another user's workspace.");
+
+    const { data: ownUpdatedRows, error: ownUpdateError } = await owner.client
+      .from("wheelforge_workspaces")
+      .update({ payload: { ...payload, marker: "authorized" } })
+      .eq("user_id", owner.id)
+      .select("user_id");
+    if (ownUpdateError) throw ownUpdateError;
+    assert.equal(ownUpdatedRows?.length ?? 0, 1, "Owner could not update its own workspace.");
+
+    const { error: ownDeleteError } = await owner.client
+      .from("wheelforge_workspaces")
+      .delete()
+      .eq("user_id", owner.id);
+    if (ownDeleteError) throw ownDeleteError;
   }
 
   console.log(`Supabase staging RLS verification passed for ${emails.join(" and ")}.`);

@@ -1,7 +1,11 @@
 import { withSupabase } from "npm:@supabase/server";
 
 export default {
-  fetch: withSupabase({ auth: "user" }, async (_request, ctx) => {
+  fetch: withSupabase({ auth: "user" }, async (request, ctx) => {
+    if (request.method !== "POST") {
+      return Response.json({ error: "Only POST requests are supported." }, { status: 405, headers: { Allow: "POST" } });
+    }
+
     const userId = ctx.userClaims?.sub ?? ctx.userClaims?.id;
     if (!userId) return Response.json({ error: "Sign-in is required." }, { status: 401 });
 
