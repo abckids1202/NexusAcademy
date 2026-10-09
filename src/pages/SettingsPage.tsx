@@ -21,6 +21,7 @@ import {
   updateCloudPassword,
   writeCloudBackup,
 } from "../services/cloudBackupService";
+import { formatStorageBytes, getStorageEstimate, getWorkspaceSizeBytes, type StorageEstimate } from "../services/storageDiagnostics";
 
 function applyPreferences(settings: UserSettings) {
   const theme = settings.theme === "system"
@@ -49,6 +50,8 @@ export function SettingsPage() {
   const [recoveryPasswordConfirm, setRecoveryPasswordConfirm] = useState("");
   const [deleteAccountPassword, setDeleteAccountPassword] = useState("");
   const [deleteAccountPhrase, setDeleteAccountPhrase] = useState("");
+  const [storageEstimate, setStorageEstimate] = useState<StorageEstimate>({ supported: false });
+  const [workspaceSizeBytes, setWorkspaceSizeBytes] = useState(() => getWorkspaceSizeBytes());
   const preservedCorruptData = getPreservedCorruptData();
 
   useEffect(() => {
@@ -78,6 +81,8 @@ export function SettingsPage() {
 
   useEffect(() => {
     setSettings(loadData().settings);
+    setWorkspaceSizeBytes(getWorkspaceSizeBytes());
+    void getStorageEstimate().then(setStorageEstimate);
   }, [dataRevision]);
 
   function update<K extends keyof UserSettings>(key: K, value: UserSettings[K]) {
@@ -326,6 +331,9 @@ export function SettingsPage() {
       <ShellCard title="Your data" description="This version keeps your projects in localStorage on this device.">
         <div className="settings-fields">
           <p className="storage-key">Storage key <code>{STORAGE_KEY}</code></p>
+          <p className="muted">Workspace size: {formatStorageBytes(workspaceSizeBytes)}{storageEstimate.supported && storageEstimate.usageBytes !== undefined && storageEstimate.quotaBytes !== undefined
+            ? ` · Browser storage used: ${formatStorageBytes(storageEstimate.usageBytes)} of ${formatStorageBytes(storageEstimate.quotaBytes)}`
+            : " · Browser quota estimate unavailable"}</p>
           {preservedCorruptData !== undefined && <section className="storage-recovery" aria-labelledby="storage-recovery-title">
             <h3 id="storage-recovery-title">Recover damaged workspace</h3>
             <p>The original saved value is preserved. Download it for diagnosis, then import a valid backup with Replace or reset local data. Merge is disabled because the saved workspace cannot be trusted.</p>
