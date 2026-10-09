@@ -752,3 +752,12 @@ export function seedDemoData(): WheelForgeData {
 
   return persistData(demoData);
 }
+
+export function clearSavedHistory(): WheelForgeData {
+  const data = loadData();
+  return persistData({
+    ...data,
+    spinResults: [],
+    chainSessions: data.chainSessions.filter((session) => session.status === "in_progress"),
+  });
+}

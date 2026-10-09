@@ -17,6 +17,39 @@ test("cloud backup is optional and local settings remain available", async ({ pa
   }
 });
 
+test("history cleanup removes saved results without removing active generator sessions", async ({ page }) => {
+  await page.goto("/settings");
+  await expect(page.getByRole("button", { name: "Clear saved history" })).toBeVisible();
+  await page.evaluate(() => {
+    const data = JSON.parse(localStorage.getItem("wheelforge_data_v1") ?? "null");
+    data.spinResults = [{
+      id: "cleanup-result", wheelId: data.wheels[0].id, wheelTitle: data.wheels[0].title,
+      optionId: data.wheels[0].options[0].id, resultLabel: data.wheels[0].options[0].label,
+      resultColor: "#fff", resultWeight: 1, resultChance: 1, specialType: "normal",
+      createdAt: new Date().toISOString(), spinIndex: 1,
+    }];
+    data.chainSessions = [
+      { id: "active-session", chainId: "active-chain", chainTitle: "Active story", status: "in_progress", results: [], startedAt: new Date().toISOString() },
+      { id: "completed-session", chainId: "completed-chain", chainTitle: "Finished story", status: "completed", results: [], startedAt: new Date().toISOString(), completedAt: new Date().toISOString() },
+    ];
+    localStorage.setItem("wheelforge_data_v1", JSON.stringify(data));
+  });
+  await page.reload();
+
+  let confirmedMessage = "";
+  page.once("dialog", async (dialog) => {
+    confirmedMessage = dialog.message();
+    await dialog.accept();
+  });
+  await page.getByRole("button", { name: "Clear saved history" }).click();
+  expect(confirmedMessage).toContain("Active generator sessions will remain resumable");
+  await expect(page.getByRole("status")).toContainText("Cleared 1 spin result and 1 completed generator session");
+
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("wheelforge_data_v1") ?? "null"));
+  expect(saved.spinResults).toEqual([]);
+  expect(saved.chainSessions.map((session: { id: string }) => session.id)).toEqual(["active-session"]);
+});
+
 test("invalid stored workspace is preserved and Settings offers raw export, backup recovery, or confirmed reset", async ({ page }) => {
   await page.goto("/settings");
   const [backupDownload] = await Promise.all([

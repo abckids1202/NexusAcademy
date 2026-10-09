@@ -5,7 +5,7 @@ import { Cloud, CloudDownload, CloudUpload, Download, LogIn, LogOut, RotateCcw, 
 import { PageHeader } from "../components/common/PageHeader";
 import { ShellCard } from "../components/common/ShellCard";
 import type { UserSettings, WheelForgeData } from "../types";
-import { getStorageHealth, getPreservedCorruptData, getImportReviewSummary, STORAGE_KEY, importData, loadData, mergeImportData, parseImportData, resetData, saveSettingsPatch, seedDemoData } from "../services/storageService";
+import { clearSavedHistory, getStorageHealth, getPreservedCorruptData, getImportReviewSummary, STORAGE_KEY, importData, loadData, mergeImportData, parseImportData, resetData, saveSettingsPatch, seedDemoData } from "../services/storageService";
 import { useDataRevision } from "../hooks/useDataRevision";
 import {
   deleteCloudAccount,
@@ -170,6 +170,14 @@ export function SettingsPage() {
     setSettings(seeded.settings);
     setMessage("Demo wheels and chains restored.");
     window.location.reload();
+  }
+
+  function clearHistory() {
+    if (!window.confirm("Clear saved spin history and completed generator sessions? Export a backup first if you may need these results. Active generator sessions will remain resumable.")) return;
+    const before = loadData();
+    const cleared = clearSavedHistory();
+    setWorkspaceSizeBytes(getWorkspaceSizeBytes());
+    setMessage(`Cleared ${before.spinResults.length} spin result${before.spinResults.length === 1 ? "" : "s"} and ${before.chainSessions.filter((session) => session.status !== "in_progress").length} completed generator session${before.chainSessions.filter((session) => session.status !== "in_progress").length === 1 ? "" : "s"}. ${cleared.chainSessions.length} active session${cleared.chainSessions.length === 1 ? " remains" : "s remain"}.`);
   }
 
   async function handleCloudAuth(action: "sign-in" | "sign-up") {
@@ -361,6 +369,7 @@ export function SettingsPage() {
             </section>;
           })()}
           <button className="secondary-link" type="button" disabled={preservedCorruptData !== undefined} onClick={loadDemo}><RotateCcw size={16} /> Restore demo data</button>
+          <button className="danger-button reset-button" type="button" disabled={preservedCorruptData !== undefined} onClick={clearHistory}>Clear saved history</button>
           <button className="danger-button reset-button" type="button" onClick={resetWorkspace}>Reset all local data</button>
           {message && <p className="status-note" role="status">{message}</p>}
         </div>
