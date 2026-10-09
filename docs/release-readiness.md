@@ -15,6 +15,7 @@
 - `npm run test:e2e` passes with 55 Chromium journeys.
 - `npm run test:e2e:cloud` passes with 2 mocked cloud journeys.
 - `npm run verify:deployment:config` passes with the SPA fallback and six required security headers, including policy-value validation for CSP, HSTS, frame, referrer, permissions, and content-type protections.
+- `npm run verify:client-bundle` passes across 43 generated assets and rejects service-role markers, Supabase secret-key markers, configured secret values, and private-key material in browser output.
 - `npm run check` passes on the immediately preceding application commit, including 55 Chromium journeys and 2 mocked cloud journeys; the latest commit changes only deployment-verifier scripts and passes targeted lint/config checks.
 - The account-deletion Edge Function rejects non-POST requests, and the staging verifier covers authorized and cross-account workspace mutations; live Supabase execution remains required.
 - The database-level pgTAP policy test covers authenticated owner CRUD, cross-account insert/update/delete denial, and anonymous read/write denial; it still requires a local or hosted Supabase test runner.

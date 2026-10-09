@@ -22,6 +22,7 @@ Use this checklist for each staging release and for the production promotion dec
 - [ ] Dependency audit has zero high or critical vulnerabilities, or exceptions are documented.
 - [ ] Production build succeeds.
 - [ ] Static deployment configuration validation succeeds.
+- [ ] Generated client bundle secret scan passes.
 - [ ] Chromium E2E suite passes.
 - [ ] Cloud-mock E2E suite passes.
 - [ ] Firefox and WebKit smoke suites pass in CI or an equivalent supported environment.
