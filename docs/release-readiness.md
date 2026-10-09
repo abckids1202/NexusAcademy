@@ -2,7 +2,7 @@
 
 **Last verified:** October 9, 2026
 
-**Verified commit:** `1651bef add safe local history cleanup`
+**Verified commit:** `ed78000 add deployment health endpoint`
 
 ## Verified in the current checkout
 
@@ -10,10 +10,10 @@
 - `npm run test:coverage` passes with 142 tests across 13 source test files and the global coverage gate (70% statements, 65% branches, 75% functions, 75% lines).
 - `npm run audit` passes with no high or critical advisories.
 - `npm run build` passes.
-- `npm run test:e2e` passes with 53 Chromium journeys.
+- `npm run test:e2e` passes with 54 Chromium journeys.
 - `npm run test:e2e:cloud` passes with 2 mocked cloud journeys.
 - `npm run verify:deployment:config` passes with the SPA fallback and six required security headers.
-- `npm run check` passes on the verified commit, including 53 Chromium journeys and 2 mocked cloud journeys.
+- `npm run check` passes on the verified commit, including 54 Chromium journeys and 2 mocked cloud journeys.
 - `npm run test:e2e:cross-browser` provides 3 Firefox, 3 desktop WebKit, 3 mobile Chromium, and 3 mobile WebKit smoke journeys in CI for routing, the shell, templates, and tournament setup; full feature coverage remains Chromium-based.
 - Local Windows verification currently passes WebKit smoke tests; Playwright Firefox cannot launch in this environment (`spawn UNKNOWN`), so Firefox evidence must come from the Ubuntu CI runner or a manual Firefox session.
 - Vitest is scoped to `src/**/*.test.ts`; legacy repository tests cannot silently contaminate the WheelForge gate.
