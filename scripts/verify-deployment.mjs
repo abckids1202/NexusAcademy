@@ -21,6 +21,7 @@ const requiredHeaders = [
   "permissions-policy",
   "strict-transport-security",
 ];
+const verifiedAssets = new Set();
 
 async function fetchRoute(route) {
   const response = await fetch(`${baseUrl}${route}`, {
@@ -32,9 +33,18 @@ async function fetchRoute(route) {
   assert.match(contentType, /text\/html/i, `${route} did not return an HTML app shell.`);
   const html = await response.text();
   assert.match(html, /<div id=["']root["']>/, `${route} is missing the React root.`);
-  assert.match(html, /<script[^>]+type=["']module["'][^>]+src=/, `${route} is missing the module entry script.`);
+  const moduleSource = html.match(/<script[^>]+type=["']module["'][^>]+src=["']([^"']+)["']/i)?.[1];
+  assert.ok(moduleSource, `${route} is missing the module entry script.`);
   for (const header of requiredHeaders) {
     assert.ok(response.headers.get(header), `${route} is missing the ${header} header.`);
+  }
+  const assetUrl = new URL(moduleSource, response.url).toString();
+  if (!verifiedAssets.has(assetUrl)) {
+    const assetResponse = await fetch(assetUrl, { redirect: "follow" });
+    assert.ok(assetResponse.ok, `The module entry asset returned HTTP ${assetResponse.status}: ${assetUrl}`);
+    const assetContentType = assetResponse.headers.get("content-type") ?? "";
+    assert.match(assetContentType, /(javascript|ecmascript|text\/plain)/i, `The module entry asset is not JavaScript: ${assetUrl}`);
+    verifiedAssets.add(assetUrl);
   }
   return response.url;
 }
