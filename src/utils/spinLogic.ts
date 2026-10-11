@@ -10,6 +10,13 @@ import { randomUnit } from "./random";
 
 export const MIN_REALISTIC_SPIN_DURATION_MS = 10_000;
 export const MAX_REALISTIC_SPIN_DURATION_MS = 15_000;
+export const MAX_AUTO_SPIN_COUNT = 25;
+
+export function normalizeAutoSpinCount(value: string | number): number {
+  const parsed = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(parsed)) return 1;
+  return Math.min(MAX_AUTO_SPIN_COUNT, Math.max(1, Math.floor(parsed)));
+}
 
 export function getRandomSpinDurationMs(random: () => number = randomUnit): number {
   return MIN_REALISTIC_SPIN_DURATION_MS + Math.floor(random() * (MAX_REALISTIC_SPIN_DURATION_MS - MIN_REALISTIC_SPIN_DURATION_MS + 1));

@@ -17,6 +17,11 @@ test("auto-spin completes a bounded queue and keeps the collected results", asyn
   const savedResults = await page.evaluate(() => JSON.parse(localStorage.getItem("wheelforge_data_v1") ?? "null")
     .spinResults.filter((result: { wheelTitle: string }) => result.wheelTitle === "Auto-spin test wheel"));
   expect(savedResults).toHaveLength(3);
+
+  await page.getByRole("button", { name: "Close result" }).click();
+  await autoSpin.getByLabel("Number of spins").fill("");
+  await autoSpin.getByRole("button", { name: "Start auto-spin" }).click();
+  await expect(autoSpin.locator("ol li")).toHaveCount(1);
 });
 
 test("undoing the latest elimination spin restores its option and removes the history entry", async ({ page }) => {

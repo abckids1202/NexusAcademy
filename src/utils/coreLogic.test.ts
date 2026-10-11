@@ -5,7 +5,7 @@ import { getImportReviewSummary, getStorageHealth, importData, loadData, mergeIm
 import { undoLatestStandaloneSpin } from "../services/spinService";
 import { createTournament, updateTournamentSetup } from "../services/tournamentService";
 import { findNextRunnableStepIndex, resolveChainStep } from "./chainLogic";
-import { countAccumulatedSelections, createSpinSelection, drawRandomOrder, drawUniqueWinners, getRandomSpinDurationMs, getUniqueWinnerCount, pickWeightedOption, shouldRemoveWinnerAfterSpin } from "./spinLogic";
+import { countAccumulatedSelections, createSpinSelection, drawRandomOrder, drawUniqueWinners, getRandomSpinDurationMs, getUniqueWinnerCount, normalizeAutoSpinCount, pickWeightedOption, shouldRemoveWinnerAfterSpin } from "./spinLogic";
 import { createRoundRobinTournament, createSingleEliminationTournament, drawTournamentWinners, recordTournamentCondition, recordTournamentScore, recordTournamentWinner, undoTournamentWinnerDraw } from "./tournamentLogic";
 import { calculateTargetRotation, getSegmentAngles, normalizeDegrees } from "./wheelMath";
 import { validateChain, validateWheel } from "./validation";
@@ -120,6 +120,14 @@ describe("wheel selection and geometry", () => {
     expect(getRandomSpinDurationMs(() => 0)).toBe(10_000);
     expect(getRandomSpinDurationMs(() => 0.5)).toBe(12_500);
     expect(getRandomSpinDurationMs(() => 0.999999)).toBe(15_000);
+  });
+
+  it("normalizes incomplete or extreme auto-spin counts", () => {
+    expect(normalizeAutoSpinCount("")).toBe(1);
+    expect(normalizeAutoSpinCount("not-a-number")).toBe(1);
+    expect(normalizeAutoSpinCount("3.9")).toBe(3);
+    expect(normalizeAutoSpinCount(100)).toBe(25);
+    expect(normalizeAutoSpinCount(0)).toBe(1);
   });
 
   it("keeps weighted chances and selection stable when finite weights would overflow their sum", () => {

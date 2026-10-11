@@ -9,7 +9,7 @@
 ## Verified in the current checkout
 
 - `npm run lint` passes.
-- `npm run test:coverage` passes with 145 tests across 14 source test files and the global coverage gate (70% statements, 65% branches, 75% functions, 75% lines).
+- `npm run test:coverage` passes with 146 tests across 14 source test files and the global coverage gate (70% statements, 65% branches, 75% functions, 75% lines).
 - `npm run audit` passes with no high or critical advisories.
 - `npm run build` passes.
 - `npm run test:e2e` passes with 56 Chromium journeys, including bounded auto-spin completion under reduced motion.

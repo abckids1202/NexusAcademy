@@ -11,7 +11,7 @@ import { clearSpinHistory, getSpinResultsForWheel, saveSpinResult, saveUniqueWin
 import { saveWheel } from "../services/wheelService";
 import type { SpinResult } from "../types";
 import { useWheels } from "../hooks/useWheels";
-import { countAccumulatedSelections, createSpinSelection, drawRandomOrder, drawUniqueWinners, easeOutCubic, getRandomSpinDurationMs, getUniqueWinnerCount, shouldRemoveWinnerAfterSpin } from "../utils/spinLogic";
+import { countAccumulatedSelections, createSpinSelection, drawRandomOrder, drawUniqueWinners, easeOutCubic, getRandomSpinDurationMs, getUniqueWinnerCount, normalizeAutoSpinCount, shouldRemoveWinnerAfterSpin } from "../utils/spinLogic";
 import { playSpinAudio, prepareSpinAudio, shouldSkipSpinAnimation } from "../utils/celebration";
 import { randomUnit } from "../utils/random";
 import {
@@ -205,7 +205,7 @@ export function SpinPage() {
 
   function startAutoSpin() {
     if (!selectedWheel || !canSpin || isSpinning) return;
-    const count = Math.min(25, Math.max(1, Math.floor(Number(autoSpinCount))));
+    const count = normalizeAutoSpinCount(autoSpinCount);
     autoSpinRef.current = { remaining: count, results: [] };
     setAutoSpinRemaining(count);
     setAutoSpinResults([]);
