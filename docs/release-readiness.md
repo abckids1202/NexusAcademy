@@ -4,12 +4,12 @@
 
 **Verified commit:** `39b4e62 Avoid unsupported meta CSP directive`
 
-**Latest full application evidence:** the local release checks passed on `0f09ac7`; the subsequent deployment hardening, diagnostic, and CSP compatibility commits also passed build, static deployment validation, client-bundle secret scanning, focused runtime-diagnostic tests, and 55 Chromium journeys. Commit `39b4e62` is deployed privately through WheelForge's managed Site.
+**Latest full application evidence:** the local release checks were rerun successfully in the current checkout after the deployment hardening, diagnostic, CSP compatibility, and Edge Function guard changes. The static application artifact deployed privately through WheelForge's managed Site remains commit `39b4e62`; later commits contain release guards and evidence documentation.
 
 ## Verified in the current checkout
 
 - `npm run lint` passes.
-- `npm run test:coverage` passes with 144 tests across 14 source test files and the global coverage gate (70% statements, 65% branches, 75% functions, 75% lines).
+- `npm run test:coverage` passes with 145 tests across 14 source test files and the global coverage gate (70% statements, 65% branches, 75% functions, 75% lines).
 - `npm run audit` passes with no high or critical advisories.
 - `npm run build` passes.
 - `npm run test:e2e` passes with 55 Chromium journeys.
