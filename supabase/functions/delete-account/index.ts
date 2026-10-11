@@ -1,19 +1,21 @@
 import { withSupabase } from "npm:@supabase/server";
 
+const responseHeaders = { "Cache-Control": "no-store" };
+
 export default {
   fetch: withSupabase({ auth: "user" }, async (request, ctx) => {
     if (request.method !== "POST") {
-      return Response.json({ error: "Only POST requests are supported." }, { status: 405, headers: { Allow: "POST" } });
+      return Response.json({ error: "Only POST requests are supported." }, { status: 405, headers: { ...responseHeaders, Allow: "POST" } });
     }
 
     const userId = ctx.userClaims?.sub ?? ctx.userClaims?.id;
-    if (!userId) return Response.json({ error: "Sign-in is required." }, { status: 401 });
+    if (!userId) return Response.json({ error: "Sign-in is required." }, { status: 401, headers: responseHeaders });
 
     const { error } = await ctx.supabaseAdmin.auth.admin.deleteUser(userId, false);
     if (error) {
-      return Response.json({ error: "Account deletion failed." }, { status: 500 });
+      return Response.json({ error: "Account deletion failed." }, { status: 500, headers: responseHeaders });
     }
 
-    return Response.json({ deleted: true });
+    return Response.json({ deleted: true }, { headers: responseHeaders });
   }),
 };
