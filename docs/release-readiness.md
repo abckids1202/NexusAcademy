@@ -2,9 +2,9 @@
 
 **Last verified:** October 11, 2026
 
-**Verified commit:** `f42f9a0 Improve runtime diagnostic context`
+**Verified commit:** `39b4e62 Avoid unsupported meta CSP directive`
 
-**Latest full application evidence:** the local release checks passed on `0f09ac7`; the subsequent deployment hardening and diagnostic commits also passed build, static deployment validation, client-bundle secret scanning, and focused runtime-diagnostic tests. Commit `f42f9a0` is deployed privately through WheelForge's managed Site.
+**Latest full application evidence:** the local release checks passed on `0f09ac7`; the subsequent deployment hardening, diagnostic, and CSP compatibility commits also passed build, static deployment validation, client-bundle secret scanning, focused runtime-diagnostic tests, and 55 Chromium journeys. Commit `39b4e62` is deployed privately through WheelForge's managed Site.
 
 ## Verified in the current checkout
 
@@ -22,7 +22,7 @@
 - `npm run test:e2e:cross-browser` provides 3 Firefox, 3 desktop WebKit, 3 mobile Chromium, and 3 mobile WebKit smoke journeys in CI for routing, the shell, templates, and tournament setup; full feature coverage remains Chromium-based.
 - Local Windows verification currently passes WebKit smoke tests; Playwright Firefox cannot launch in this environment (`spawn UNKNOWN`), so Firefox evidence must come from the Ubuntu CI runner or a manual Firefox session.
 - The local cross-browser run passes all 9 configured WebKit, mobile Chromium, and mobile WebKit smoke journeys; this remains automated smoke evidence, not a substitute for physical-device or manual Safari/accessibility QA.
-- The managed private Site deployment for `f42f9a0` succeeded at `https://wheelforge.matthew-arsene-en.chatgpt.site`; live owner-authenticated HTML verification returned HTTP 200 with the root mount and HTML CSP/referrer fallbacks. The Site remains owner-only and has no configured Supabase runtime variables.
+- The managed private Site deployment for `39b4e62` succeeded at `https://wheelforge.matthew-arsene-en.chatgpt.site`; live owner-authenticated HTML verification returned HTTP 200 with the root mount and HTML CSP/referrer fallbacks. The Site remains owner-only and has no configured Supabase runtime variables.
 - Vitest is scoped to `src/**/*.test.ts`; legacy repository tests cannot silently contaminate the WheelForge gate.
 - GitHub Actions runs lint, unit tests with the coverage gate, audit, build, Chromium browser tests, cross-browser smoke tests, cloud-mock tests, and uploads coverage and Playwright artifacts.
 - GitHub Actions also starts a local Supabase stack and runs the committed pgTAP RLS policy tests on pushes and pull requests; the local Windows checkout cannot run this job without Docker and the Supabase CLI.
