@@ -46,7 +46,7 @@ describe("runtime diagnostics", () => {
     const cleanup = installRuntimeDiagnostics();
     listeners.get("error")?.({
       error: new Error("Upload failed for person@example.com"),
-      filename: "https://example.test/assets/app.js",
+      filename: "https://example.test/assets/app.js?access_token=should-not-leak#source",
       lineno: 12,
       colno: 4,
       message: "Upload failed",

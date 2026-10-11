@@ -50,6 +50,15 @@ function describeUnknownError(value: unknown): string {
   return "Unhandled browser error";
 }
 
+function sanitizeSource(source: string): string {
+  try {
+    const url = new URL(source);
+    return `${url.origin}${url.pathname}`;
+  } catch {
+    return source.split(/[?#]/, 1)[0] || "unknown-source";
+  }
+}
+
 export function getRuntimeDiagnostics(): RuntimeDiagnostic[] {
   return readDiagnostics();
 }
@@ -91,7 +100,7 @@ export function exportRuntimeDiagnostics(): string {
 export function installRuntimeDiagnostics(): () => void {
   if (typeof window === "undefined") return () => undefined;
   const onError = (event: ErrorEvent) => {
-    const source = event.filename ? ` (${event.filename}:${event.lineno ?? 0}:${event.colno ?? 0})` : "";
+    const source = event.filename ? ` (${sanitizeSource(event.filename)}:${event.lineno ?? 0}:${event.colno ?? 0})` : "";
     recordRuntimeDiagnostic("window-error", `${describeUnknownError(event.error ?? event.message)}${source}`);
   };
   const onRejection = (event: PromiseRejectionEvent) => recordRuntimeDiagnostic("unhandled-rejection", describeUnknownError(event.reason));
