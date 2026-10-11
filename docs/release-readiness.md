@@ -12,11 +12,11 @@
 - `npm run test:coverage` passes with 145 tests across 14 source test files and the global coverage gate (70% statements, 65% branches, 75% functions, 75% lines).
 - `npm run audit` passes with no high or critical advisories.
 - `npm run build` passes.
-- `npm run test:e2e` passes with 55 Chromium journeys.
+- `npm run test:e2e` passes with 56 Chromium journeys, including bounded auto-spin completion under reduced motion.
 - `npm run test:e2e:cloud` passes with 2 mocked cloud journeys.
 - `npm run verify:deployment:config` passes with the SPA fallback, Vercel policy values, and host-native `dist/_headers` coverage for CSP, HSTS, frame, referrer, permissions, and content-type protections.
 - `npm run verify:client-bundle` passes across 43 generated assets and rejects service-role markers, Supabase secret-key markers, configured secret values, and private-key material in browser output.
-- `npm run check` passes on the verified commit, including 55 Chromium journeys, 2 mocked cloud journeys, and the generated-client secret scan.
+- `npm run check` passes on the verified checkout, including 56 Chromium journeys, 2 mocked cloud journeys, and the generated-client secret scan.
 - The account-deletion Edge Function rejects non-POST requests, and the staging verifier covers authorized and cross-account workspace mutations; live Supabase execution remains required.
 - The database-level pgTAP policy test covers authenticated owner CRUD, cross-account insert/update/delete denial, and anonymous read/write denial; it still requires a local or hosted Supabase test runner.
 - `npm run test:e2e:cross-browser` provides 3 Firefox, 3 desktop WebKit, 3 mobile Chromium, and 3 mobile WebKit smoke journeys in CI for routing, the shell, templates, and tournament setup; full feature coverage remains Chromium-based.

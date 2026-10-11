@@ -1,5 +1,24 @@
 import { expect, test } from "@playwright/test";
 
+test("auto-spin completes a bounded queue and keeps the collected results", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/wheels/new");
+  await page.getByLabel("Title").fill("Auto-spin test wheel");
+  await page.getByRole("button", { name: "Save and spin" }).first().click();
+
+  const autoSpin = page.locator(".auto-spin-panel");
+  await autoSpin.getByLabel("Number of spins").fill("3");
+  await autoSpin.getByRole("button", { name: "Start auto-spin" }).click();
+
+  await expect(autoSpin).toContainText("Auto-spin results", { timeout: 10_000 });
+  await expect(autoSpin.locator("ol li")).toHaveCount(3);
+  await expect(autoSpin.getByRole("button", { name: "Start auto-spin" })).toBeEnabled();
+
+  const savedResults = await page.evaluate(() => JSON.parse(localStorage.getItem("wheelforge_data_v1") ?? "null")
+    .spinResults.filter((result: { wheelTitle: string }) => result.wheelTitle === "Auto-spin test wheel"));
+  expect(savedResults).toHaveLength(3);
+});
+
 test("undoing the latest elimination spin restores its option and removes the history entry", async ({ page }) => {
   await page.goto("/wheels/new");
   await page.getByLabel("Title").fill("Undoable elimination wheel");

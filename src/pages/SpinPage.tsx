@@ -62,6 +62,7 @@ export function SpinPage() {
   const [historyMessage, setHistoryMessage] = useState("");
   const [autoSpinCount, setAutoSpinCount] = useState("5");
   const [autoSpinActive, setAutoSpinActive] = useState(false);
+  const [autoSpinRemaining, setAutoSpinRemaining] = useState(0);
   const [autoSpinResults, setAutoSpinResults] = useState<SpinResult[]>([]);
   const autoSpinRef = useRef<{ remaining: number; results: SpinResult[] } | null>(null);
   const spinButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -93,12 +94,12 @@ export function SpinPage() {
   }, [selectedWheel]);
 
   useEffect(() => {
-    if (isSpinning || !autoSpinActive || !autoSpinRef.current || autoSpinRef.current.remaining <= 0) return;
+    if (isSpinning || !autoSpinActive || autoSpinRemaining <= 0) return;
     const timer = window.setTimeout(() => handleSpin(true), 650);
     return () => window.clearTimeout(timer);
     // handleSpin intentionally uses the latest render after each completed spin.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSpinning, autoSpinActive]);
+  }, [isSpinning, autoSpinActive, autoSpinRemaining]);
 
   useEffect(() => {
     return () => {
@@ -171,13 +172,16 @@ export function SpinPage() {
       setIsSpinning(false);
       setSpinProgress(100);
       if (isAutomated && autoSpinRef.current) {
-        autoSpinRef.current.results = [...autoSpinRef.current.results, result];
-        autoSpinRef.current.remaining -= 1;
-        setAutoSpinResults(autoSpinRef.current.results);
-        if (autoSpinRef.current.remaining <= 0) {
+        const nextResults = [...autoSpinRef.current.results, result];
+        const remaining = autoSpinRef.current.remaining - 1;
+        autoSpinRef.current.results = nextResults;
+        autoSpinRef.current.remaining = remaining;
+        setAutoSpinResults(nextResults);
+        setAutoSpinRemaining(remaining);
+        if (remaining <= 0) {
           autoSpinRef.current = null;
           setAutoSpinActive(false);
-          setHistoryMessage(`Auto-spin complete: ${autoSpinResults.length + 1} results collected.`);
+          setHistoryMessage(`Auto-spin complete: ${nextResults.length} results collected.`);
         }
       }
       // Automated runs collect quietly; if the user stopped the queue, still reveal the spin in progress.
@@ -203,6 +207,7 @@ export function SpinPage() {
     if (!selectedWheel || !canSpin || isSpinning) return;
     const count = Math.min(25, Math.max(1, Math.floor(Number(autoSpinCount))));
     autoSpinRef.current = { remaining: count, results: [] };
+    setAutoSpinRemaining(count);
     setAutoSpinResults([]);
     setAutoSpinActive(true);
     handleSpin(true);
@@ -211,6 +216,7 @@ export function SpinPage() {
   function stopAutoSpin() {
     autoSpinRef.current = null;
     setAutoSpinActive(false);
+    setAutoSpinRemaining(0);
     setHistoryMessage("Auto-spin will stop after the current result.");
   }
 
@@ -342,7 +348,7 @@ export function SpinPage() {
                 />
               </div>
               <div className="auto-spin-panel" aria-label="Automatic spin controls">
-                <div className="auto-spin-heading"><div><strong><Zap size={16} /> Auto-spin</strong><span>Run repeated spins and collect the results without opening each result modal.</span></div>{autoSpinActive && <span className="auto-spin-status" role="status">{autoSpinRef.current?.remaining ?? 0} left</span>}</div>
+                <div className="auto-spin-heading"><div><strong><Zap size={16} /> Auto-spin</strong><span>Run repeated spins and collect the results without opening each result modal.</span></div>{autoSpinActive && <span className="auto-spin-status" role="status">{autoSpinRemaining} left</span>}</div>
                 <div className="auto-spin-controls">
                   <label className="field-stack"><span>Number of spins</span><input className="number-field" type="number" min="1" max="25" value={autoSpinCount} disabled={autoSpinActive} onChange={(event) => setAutoSpinCount(event.target.value)} /></label>
                   {!autoSpinActive ? <button className="secondary-link" type="button" disabled={!canSpin || isSpinning} onClick={startAutoSpin}><Zap size={16} /> Start auto-spin</button> : <button className="secondary-link danger-link" type="button" onClick={stopAutoSpin}><Square size={15} /> Stop after current</button>}
