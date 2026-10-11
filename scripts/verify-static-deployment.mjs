@@ -34,6 +34,12 @@ try {
 if (!/<script[^>]+type="module"[^>]+src=/.test(indexHtml)) {
   throw new Error("dist/index.html does not contain a module entry script.");
 }
+if (!/<meta[^>]+name="referrer"[^>]+content="strict-origin-when-cross-origin"/i.test(indexHtml)) {
+  throw new Error("dist/index.html must provide a strict referrer policy fallback.");
+}
+if (!/<meta[^>]+http-equiv="Content-Security-Policy"[^>]+content="[^"]*default-src 'self'[^\"]*object-src 'none'[^\"]*script-src 'self'/i.test(indexHtml)) {
+  throw new Error("dist/index.html must provide a restrictive CSP fallback.");
+}
 
 const rewrite = vercel.rewrites?.some((entry) => entry.source === "/(.*)" && entry.destination === "/index.html");
 if (!rewrite) throw new Error("vercel.json must provide an SPA fallback rewrite to /index.html.");
