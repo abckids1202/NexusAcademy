@@ -34,7 +34,20 @@ function readDiagnostics(): RuntimeDiagnostic[] {
 }
 
 function sanitizeDetail(detail: string): string {
-  return detail.replace(/[\r\n]+/g, " ").trim().slice(0, 160) || "Unspecified runtime failure";
+  return detail
+    .replace(/[\r\n]+/g, " ")
+    .replace(/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/g, "[redacted-email]")
+    .trim()
+    .slice(0, 160) || "Unspecified runtime failure";
+}
+
+function describeUnknownError(value: unknown): string {
+  if (value instanceof Error) {
+    return `${value.name || "Error"}: ${value.message || "No error message"}`;
+  }
+  if (typeof value === "string") return value;
+  if (value && typeof value === "object") return `Unhandled ${Object.prototype.toString.call(value).slice(8, -1).toLowerCase()}`;
+  return "Unhandled browser error";
 }
 
 export function getRuntimeDiagnostics(): RuntimeDiagnostic[] {
@@ -78,9 +91,10 @@ export function exportRuntimeDiagnostics(): string {
 export function installRuntimeDiagnostics(): () => void {
   if (typeof window === "undefined") return () => undefined;
   const onError = (event: ErrorEvent) => {
-    recordRuntimeDiagnostic("window-error", event.error instanceof Error ? event.error.name : "Unhandled browser error");
+    const source = event.filename ? ` (${event.filename}:${event.lineno ?? 0}:${event.colno ?? 0})` : "";
+    recordRuntimeDiagnostic("window-error", `${describeUnknownError(event.error ?? event.message)}${source}`);
   };
-  const onRejection = () => recordRuntimeDiagnostic("unhandled-rejection", "Unhandled promise rejection");
+  const onRejection = (event: PromiseRejectionEvent) => recordRuntimeDiagnostic("unhandled-rejection", describeUnknownError(event.reason));
   window.addEventListener("error", onError);
   window.addEventListener("unhandledrejection", onRejection);
   return () => {
