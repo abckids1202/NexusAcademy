@@ -40,6 +40,9 @@ if (!/<meta[^>]+name="referrer"[^>]+content="strict-origin-when-cross-origin"/i.
 if (!/<meta[^>]+http-equiv="Content-Security-Policy"[^>]+content="[^"]*default-src 'self'[^\"]*object-src 'none'[^\"]*script-src 'self'/i.test(indexHtml)) {
   throw new Error("dist/index.html must provide a restrictive CSP fallback.");
 }
+if (/<meta[^>]+http-equiv="Content-Security-Policy"[^>]+content="[^\"]*frame-ancestors/i.test(indexHtml)) {
+  throw new Error("dist/index.html must not put frame-ancestors in a meta CSP; use the HTTP response header instead.");
+}
 
 const rewrite = vercel.rewrites?.some((entry) => entry.source === "/(.*)" && entry.destination === "/index.html");
 if (!rewrite) throw new Error("vercel.json must provide an SPA fallback rewrite to /index.html.");
