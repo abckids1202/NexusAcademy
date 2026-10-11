@@ -46,7 +46,7 @@ This verifies the root and every primary application route return the HTML app s
 
 The same route and RLS checks can be run from GitHub Actions with the manual `WheelForge staging verification` workflow. Provide the deployment origin as the workflow input and configure these secrets in the `staging` environment: `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and `SUPABASE_TEST_PASSWORD`. The service-role key is used only by the staging verifier and is never exposed to the browser build.
 
-The deployment also exposes `/health.json` as a small uncached uptime target. It must return JSON with `{ "service": "wheelforge", "status": "ok" }`. This confirms that the host is serving the expected static artifact; it is not a substitute for browser, Supabase, or client-error monitoring.
+The deployment also exposes `/health.json` as a small uncached uptime target. It must return JSON with `{ "service": "wheelforge", "status": "ok" }`. The repository includes both `vercel.json` and the host-native `public/_headers` policy; use the latter on static hosts that do not apply Vercel configuration. This confirms that the host is serving the expected static artifact; it is not a substitute for browser, Supabase, or client-error monitoring.
 
 For recurring HTTP checks, configure the repository variable `DEPLOYMENT_URL` with the staging or production origin. The scheduled `WheelForge deployment monitor` workflow then runs every 15 minutes and checks the app shell, deep-link routes, security headers, module asset, HTTPS, and `/health.json`. The workflow can also be run manually with a temporary URL override. Until `DEPLOYMENT_URL` is configured, the scheduled job remains skipped.
 

@@ -14,7 +14,7 @@
 - `npm run build` passes.
 - `npm run test:e2e` passes with 55 Chromium journeys.
 - `npm run test:e2e:cloud` passes with 2 mocked cloud journeys.
-- `npm run verify:deployment:config` passes with the SPA fallback and six required security headers, including policy-value validation for CSP, HSTS, frame, referrer, permissions, and content-type protections.
+- `npm run verify:deployment:config` passes with the SPA fallback, Vercel policy values, and host-native `dist/_headers` coverage for CSP, HSTS, frame, referrer, permissions, and content-type protections.
 - `npm run verify:client-bundle` passes across 43 generated assets and rejects service-role markers, Supabase secret-key markers, configured secret values, and private-key material in browser output.
 - `npm run check` passes on the verified commit, including 55 Chromium journeys, 2 mocked cloud journeys, and the generated-client secret scan.
 - The account-deletion Edge Function rejects non-POST requests, and the staging verifier covers authorized and cross-account workspace mutations; live Supabase execution remains required.

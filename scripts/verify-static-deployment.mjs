@@ -4,11 +4,13 @@ import { join } from "node:path";
 const root = process.cwd();
 const distIndexPath = join(root, "dist", "index.html");
 const distHealthPath = join(root, "dist", "health.json");
+const distHeadersPath = join(root, "dist", "_headers");
 const vercelPath = join(root, "vercel.json");
 
-const [indexHtml, healthSource, vercelSource] = await Promise.all([
+const [indexHtml, healthSource, headersSource, vercelSource] = await Promise.all([
   readFile(distIndexPath, "utf8"),
   readFile(distHealthPath, "utf8"),
+  readFile(distHeadersPath, "utf8"),
   readFile(vercelPath, "utf8"),
 ]);
 
@@ -54,8 +56,12 @@ const weakenedHeaders = [...requiredHeaders.entries()]
   .map(([header]) => header);
 if (weakenedHeaders.length > 0) throw new Error(`vercel.json contains weakened security headers: ${weakenedHeaders.join(", ")}.`);
 
+const missingStaticHeaders = [...requiredHeaders.keys()].filter((header) => !new RegExp(`^\\s*${header}:`, "im").test(headersSource));
+if (missingStaticHeaders.length > 0) throw new Error(`dist/_headers is missing required security headers: ${missingStaticHeaders.join(", ")}.`);
+if (!/^\s*Cache-Control:\s*no-store\s*$/im.test(headersSource)) throw new Error("dist/_headers must keep the health endpoint uncached.");
+
 const healthHeader = vercel.headers?.some((entry) => entry.source === "/health.json" &&
   entry.headers?.some((header) => header.key === "Cache-Control" && header.value === "no-store"));
 if (!healthHeader) throw new Error("vercel.json must keep the health endpoint uncached.");
 
-console.log(`Static deployment configuration verified: health endpoint, ${requiredHeaders.size} security headers, SPA fallback, and ${indexHtml.length} bytes of generated HTML.`);
+console.log(`Static deployment configuration verified: health endpoint, ${requiredHeaders.size} security headers, host-native headers, SPA fallback, and ${indexHtml.length} bytes of generated HTML.`);
