@@ -67,6 +67,16 @@ if (weakenedHeaders.length > 0) throw new Error(`vercel.json contains weakened s
 
 const missingStaticHeaders = [...requiredHeaders.keys()].filter((header) => !new RegExp(`^\\s*${header}:`, "im").test(headersSource));
 if (missingStaticHeaders.length > 0) throw new Error(`dist/_headers is missing required security headers: ${missingStaticHeaders.join(", ")}.`);
+const staticHeaderValues = new Map(
+  [...requiredHeaders.keys()].map((header) => {
+    const match = headersSource.match(new RegExp(`^\\s*${header}:\\s*(.+)$`, "im"));
+    return [header, match?.[1]?.trim() ?? ""];
+  }),
+);
+const weakenedStaticHeaders = [...requiredHeaders.entries()]
+  .filter(([header, validate]) => !validate(staticHeaderValues.get(header)))
+  .map(([header]) => header);
+if (weakenedStaticHeaders.length > 0) throw new Error(`dist/_headers contains weakened security headers: ${weakenedStaticHeaders.join(", ")}.`);
 if (!/^\s*Cache-Control:\s*no-store\s*$/im.test(headersSource)) throw new Error("dist/_headers must keep the health endpoint uncached.");
 
 const healthHeader = vercel.headers?.some((entry) => entry.source === "/health.json" &&
