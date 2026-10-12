@@ -24,6 +24,7 @@ Use this checklist for each staging release and for the production promotion dec
 - [ ] Static deployment configuration validation succeeds.
 - [ ] Generated client bundle secret scan passes.
 - [ ] Chromium E2E suite passes.
+- [ ] Focused keyboard regression passes with `npm run test:e2e:keyboard`.
 - [ ] Cloud-mock E2E suite passes.
 - [ ] Firefox and WebKit smoke suites pass in CI or an equivalent supported environment.
 - [ ] Mobile Chromium and mobile WebKit smoke suites pass.
