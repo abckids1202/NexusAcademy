@@ -87,3 +87,25 @@ test("main workflows have no automatically detectable WCAG A/AA violations", asy
 
   expect(findings, findings.join("\n")).toEqual([]);
 });
+
+test("keyboard-only users can create and save a wheel", async ({ page }) => {
+  await page.goto("/wheels/new");
+
+  const title = page.getByLabel("Title");
+  const description = page.getByLabel("Description");
+  const bulkOptions = page.getByLabel("Paste options, one per line");
+  const addOptions = page.getByRole("button", { name: "Add 2 options" });
+  const save = page.getByRole("button", { name: "Save and spin" }).first();
+
+  await title.pressSequentially("Keyboard lunch wheel");
+  await description.pressSequentially("A wheel created without pointer input");
+  await bulkOptions.pressSequentially("Soup\nSalad");
+  await bulkOptions.press("Tab");
+  await expect(addOptions).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("status")).toContainText("Added 2 options");
+  await save.press("Enter");
+
+  await expect(page).toHaveURL(/\/spin\/wheel_/);
+  await expect(page.getByRole("heading", { name: "Keyboard lunch wheel" })).toBeVisible();
+});
