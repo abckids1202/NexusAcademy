@@ -2,9 +2,9 @@
 
 **Last verified:** October 12, 2026
 
-**Verified commit:** `3ca2931 docs: record green CI rerun`
+**Verified commit:** `4bbe832 chore: pin production runtime and refresh release evidence`
 
-**Latest full application evidence:** the local release checks were rerun successfully in the current checkout after the deployment hardening, diagnostic, CSP compatibility, Edge Function guard, and auto-spin queue fixes. The private managed Site still serves the tested `e176eed` artifact as version 8; the Site remains owner-only. Documentation-only commit `3ca2931` has passed the application and database workflows.
+**Latest full application evidence:** the local release checks were rerun successfully in the current checkout after the deployment hardening, diagnostic, CSP compatibility, Edge Function guard, and auto-spin queue fixes. The private managed Site still serves the tested `e176eed` artifact as version 8; the Site remains owner-only. Release-hardening commit `4bbe832` has passed the application and database workflows.
 
 ## Verified in the current checkout
 
@@ -32,6 +32,7 @@
 - For commit `968b5f7`, the [application CI run](https://github.com/abckids1202/NexusAcademy/actions/runs/38206973272) completed successfully, including the new Edge Function guard and Ubuntu browser smoke tests. The separate [database-test run](https://github.com/abckids1202/NexusAcademy/actions/runs/38206973243) failed; because this commit only changes CI/documentation and does not change migrations or database code, the failure still requires investigation or a successful rerun before release sign-off.
 - The follow-up commit `b79b64c` has a green [application CI run](https://github.com/abckids1202/NexusAcademy/actions/runs/38207300779) and green [database-test run](https://github.com/abckids1202/NexusAcademy/actions/runs/38207300746), including the remotely executed Edge Function guard and pgTAP RLS suite.
 - The current documentation commit `3ca2931` has a green [application CI run](https://github.com/abckids1202/NexusAcademy/actions/runs/38207657092) and green [database-test run](https://github.com/abckids1202/NexusAcademy/actions/runs/38207657061), confirming the current branch remains green after the evidence update.
+- Release-hardening commit `4bbe832` has a green [application CI run](https://github.com/abckids1202/NexusAcademy/actions/runs/38208435657) and green [database-test run](https://github.com/abckids1202/NexusAcademy/actions/runs/38208435666), confirming the runtime contract and release evidence changes pass the full remote gates.
 - A static `/health.json` endpoint, scheduled deployment monitor workflow, and privacy-conscious local diagnostics export are present; the live verifier covers twelve public/deep-link routes and validates security-policy values. Monitoring activation still requires a configured deployment URL and an external client-error service decision.
 - A `/privacy` route documents local storage, optional cloud backup, user controls, and the remaining legal-review boundary before public launch.
 - Page routes are lazy-loaded; the main JavaScript chunk is approximately 371 kB minified.
