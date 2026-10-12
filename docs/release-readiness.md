@@ -2,9 +2,9 @@
 
 **Last verified:** October 12, 2026
 
-**Verified commit:** `c06daef ci: enforce release contract invariants`
+**Verified commit:** `83e6e42 docs: record transient database workflow failure`
 
-**Latest full application evidence:** the local release checks were rerun successfully in the current checkout after the deployment hardening, diagnostic, CSP compatibility, Edge Function guard, auto-spin queue, storage-risk, and release-contract fixes. The private managed Site still serves the tested `e176eed` artifact as version 8; the Site remains owner-only. Release-contract commit `c06daef` has passed the application and database workflows.
+**Latest full application evidence:** the local release checks were rerun successfully in the current checkout after the deployment hardening, diagnostic, CSP compatibility, Edge Function guard, auto-spin queue, storage-risk, and release-contract fixes. The private managed Site still serves the tested `e176eed` artifact as version 8; the Site remains owner-only. Follow-up commit `83e6e42` has passed the application and database workflows after the transient database runner failure was rerun.
 
 ## Verified in the current checkout
 
@@ -36,6 +36,7 @@
 - Release-hardening commit `4bbe832` has a green [application CI run](https://github.com/abckids1202/NexusAcademy/actions/runs/38208435657) and green [database-test run](https://github.com/abckids1202/NexusAcademy/actions/runs/38208435666), confirming the runtime contract and release evidence changes pass the full remote gates.
 - Release-contract commit `c06daef` has a green [application CI run](https://github.com/abckids1202/NexusAcademy/actions/runs/38210918612) and green [database-test run](https://github.com/abckids1202/NexusAcademy/actions/runs/38210918533), including the new release-contract verification step.
 - Documentation evidence commit `b0892ac` has a green [application CI run](https://github.com/abckids1202/NexusAcademy/actions/runs/38211290491). Its database workflow [failed during runner setup](https://github.com/abckids1202/NexusAcademy/actions/runs/38211290418) before executing pgTAP; the commit contains no migration or database changes and requires a clean rerun before release sign-off.
+- Follow-up commit `83e6e42` has a green [application CI run](https://github.com/abckids1202/NexusAcademy/actions/runs/38211624601) and green [database-test run](https://github.com/abckids1202/NexusAcademy/actions/runs/38211624725), confirming the prior database failure was transient and the current branch is green.
 - A static `/health.json` endpoint, scheduled deployment monitor workflow, and privacy-conscious local diagnostics export are present; the live verifier covers twelve public/deep-link routes and validates security-policy values. Monitoring activation still requires a configured deployment URL and an external client-error service decision.
 - A `/privacy` route documents local storage, optional cloud backup, user controls, and the remaining legal-review boundary before public launch.
 - Page routes are lazy-loaded; the main JavaScript chunk is approximately 371 kB minified.
