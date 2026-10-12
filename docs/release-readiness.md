@@ -2,14 +2,14 @@
 
 **Last verified:** October 12, 2026
 
-**Verified commit:** `2691283 docs: expose focused keyboard QA command`
+**Verified commit:** `56f2d68 fix: validate cloud backup deployment configuration`
 
-**Latest full application evidence:** the local release checks were rerun successfully in the current checkout after the deployment hardening, diagnostic, CSP compatibility, Edge Function guard, auto-spin queue, storage-risk, release-contract, and keyboard-coverage fixes. The private managed Site still serves the tested `e176eed` artifact as version 8; the Site remains owner-only. Commit `2691283` has passed the application and database workflows.
+**Latest full application evidence:** the local release checks were rerun successfully in the current checkout after the deployment hardening, diagnostic, CSP compatibility, Edge Function guard, auto-spin queue, storage-risk, release-contract, keyboard-coverage, and cloud-configuration fixes. The private managed Site still serves the tested `e176eed` artifact as version 8; the Site remains owner-only. Commit `56f2d68` has passed the application and database workflows.
 
 ## Verified in the current checkout
 
 - `npm run lint` passes.
-- `npm run test:coverage` passes with 147 tests across 14 source test files and the global coverage gate (70% statements, 65% branches, 75% functions, 75% lines).
+- `npm run test:coverage` passes with 149 tests across 14 source test files and the global coverage gate (70% statements, 65% branches, 75% functions, 75% lines).
 - `npm run audit` passes with no high or critical advisories.
 - `npm run build` passes.
 - `npm run verify:release:contract` passes for the Node/npm, root-build, SPA-fallback, required-file, and monorepo-boundary invariants.
@@ -41,6 +41,7 @@
 - Keyboard-coverage commit `b35a403` has a green [application CI run](https://github.com/abckids1202/NexusAcademy/actions/runs/38212662607) and green [database-test run](https://github.com/abckids1202/NexusAcademy/actions/runs/38212662546), including the keyboard-only wheel creation journey.
 - Evidence-update commit `e7cebef` has a green [application CI run](https://github.com/abckids1202/NexusAcademy/actions/runs/38213035548) and green [database-test run](https://github.com/abckids1202/NexusAcademy/actions/runs/38213035549), preserving the 57-journey keyboard evidence.
 - Focused-QA documentation commit `2691283` has a green [application CI run](https://github.com/abckids1202/NexusAcademy/actions/runs/38213491531) and green [database-test run](https://github.com/abckids1202/NexusAcademy/actions/runs/38213491918). The focused `npm run test:e2e:keyboard` command is now documented for repeatable pre-release checks.
+- Cloud-configuration hardening commit `56f2d68` has a green [application CI run](https://github.com/abckids1202/NexusAcademy/actions/runs/38215161713) and green [database-test run](https://github.com/abckids1202/NexusAcademy/actions/runs/38215161707). The browser adapter now rejects malformed Supabase URLs and insecure production URLs before client initialization.
 - A static `/health.json` endpoint, scheduled deployment monitor workflow, and privacy-conscious local diagnostics export are present; the live verifier covers twelve public/deep-link routes and validates security-policy values. Monitoring activation still requires a configured deployment URL and an external client-error service decision.
 - A `/privacy` route documents local storage, optional cloud backup, user controls, and the remaining legal-review boundary before public launch.
 - Page routes are lazy-loaded; the main JavaScript chunk is approximately 371 kB minified.
