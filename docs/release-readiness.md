@@ -2,9 +2,9 @@
 
 **Last verified:** October 11, 2026
 
-**Verified commit:** `4d20e8b fix: advance auto-spin queues reliably`
+**Verified commit:** `e176eed fix: normalize auto-spin count input`
 
-**Latest full application evidence:** the local release checks were rerun successfully in the current checkout after the deployment hardening, diagnostic, CSP compatibility, Edge Function guard, and auto-spin queue fix. The private managed Site now serves the tested `4d20e8b` artifact as version 7; the Site remains owner-only.
+**Latest full application evidence:** the local release checks were rerun successfully in the current checkout after the deployment hardening, diagnostic, CSP compatibility, Edge Function guard, and auto-spin queue fixes. The private managed Site now serves the tested `e176eed` artifact as version 8; the Site remains owner-only.
 
 ## Verified in the current checkout
 
@@ -22,7 +22,7 @@
 - `npm run test:e2e:cross-browser` provides 3 Firefox, 3 desktop WebKit, 3 mobile Chromium, and 3 mobile WebKit smoke journeys in CI for routing, the shell, templates, and tournament setup; full feature coverage remains Chromium-based.
 - Local Windows verification currently passes WebKit smoke tests; Playwright Firefox cannot launch in this environment (`spawn UNKNOWN`), so Firefox evidence must come from the Ubuntu CI runner or a manual Firefox session.
 - The local cross-browser run passes all 9 configured WebKit, mobile Chromium, and mobile WebKit smoke journeys; this remains automated smoke evidence, not a substitute for physical-device or manual Safari/accessibility QA.
-- The managed private Site deployment for `4d20e8b` succeeded as version 7 at `https://wheelforge.matthew-arsene-en.chatgpt.site`; the Site remains owner-only and has no configured Supabase runtime variables. Earlier owner-authenticated verification returned HTTP 200 for all twelve application/deep-link routes and `/health.json`, with the root mount and HTML CSP/referrer fallbacks present. A fresh live route/header verification is still required after the new deployment.
+- The managed private Site deployment for `e176eed` succeeded as version 8 at `https://wheelforge.matthew-arsene-en.chatgpt.site`; the Site remains owner-only and has no configured Supabase runtime variables. Earlier owner-authenticated verification returned HTTP 200 for all twelve application/deep-link routes and `/health.json`, with the root mount and HTML CSP/referrer fallbacks present. A fresh live route/header verification is still required after the new deployment.
 - Vitest is scoped to `src/**/*.test.ts`; legacy repository tests cannot silently contaminate the WheelForge gate.
 - GitHub Actions runs lint, unit tests with the coverage gate, audit, build, Chromium browser tests, cross-browser smoke tests, cloud-mock tests, and uploads coverage and Playwright artifacts.
 - GitHub Actions also starts a local Supabase stack and runs the committed pgTAP RLS policy tests on pushes and pull requests; the local Windows checkout cannot run this job without Docker and the Supabase CLI.
