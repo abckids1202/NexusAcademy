@@ -19,7 +19,15 @@ let client: SupabaseClient | undefined;
 function getConfig() {
   const url = import.meta.env.VITE_SUPABASE_URL?.trim();
   const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY?.trim();
-  return url && publishableKey ? { url, publishableKey } : undefined;
+  if (!url || !publishableKey) return undefined;
+  try {
+    const parsedUrl = new URL(url);
+    if (!parsedUrl.hostname || !["http:", "https:"].includes(parsedUrl.protocol)) return undefined;
+    if (import.meta.env.PROD && parsedUrl.protocol !== "https:") return undefined;
+  } catch {
+    return undefined;
+  }
+  return { url, publishableKey };
 }
 
 export function isCloudBackupConfigured(): boolean {

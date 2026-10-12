@@ -84,6 +84,23 @@ describe("cloud backup adapter", () => {
     expect(mocks.createClient).not.toHaveBeenCalled();
   });
 
+  it("stays disabled when the deployment URL is malformed", async () => {
+    vi.stubEnv("VITE_SUPABASE_URL", "not-a-url");
+    const cloud = await loadCloudService();
+    expect(cloud.isCloudBackupConfigured()).toBe(false);
+    expect(cloud.getCloudClient()).toBeUndefined();
+    expect(mocks.createClient).not.toHaveBeenCalled();
+  });
+
+  it("rejects insecure cloud URLs in production builds", async () => {
+    vi.stubEnv("VITE_SUPABASE_URL", "http://supabase.example.test");
+    vi.stubEnv("PROD", true);
+    const cloud = await loadCloudService();
+    expect(cloud.isCloudBackupConfigured()).toBe(false);
+    expect(cloud.getCloudClient()).toBeUndefined();
+    expect(mocks.createClient).not.toHaveBeenCalled();
+  });
+
   it("stores a validated workspace under the authenticated account only", async () => {
     const cloud = await loadCloudService();
     const workspace = createEmptyData();
