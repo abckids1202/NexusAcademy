@@ -39,6 +39,9 @@ jobs:
       - name: Production build
         run: npm run build
 
+      - name: Verify account-deletion Edge Function guard
+        run: npm run verify:edge-function
+
       - name: Verify static deployment configuration
         run: npm run verify:deployment:config
 
