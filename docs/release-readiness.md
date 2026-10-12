@@ -2,9 +2,9 @@
 
 **Last verified:** October 12, 2026
 
-**Verified commit:** `83e6e42 docs: record transient database workflow failure`
+**Verified commit:** `b35a403 test: cover keyboard-only wheel creation`
 
-**Latest full application evidence:** the local release checks were rerun successfully in the current checkout after the deployment hardening, diagnostic, CSP compatibility, Edge Function guard, auto-spin queue, storage-risk, and release-contract fixes. The private managed Site still serves the tested `e176eed` artifact as version 8; the Site remains owner-only. Follow-up commit `83e6e42` has passed the application and database workflows after the transient database runner failure was rerun.
+**Latest full application evidence:** the local release checks were rerun successfully in the current checkout after the deployment hardening, diagnostic, CSP compatibility, Edge Function guard, auto-spin queue, storage-risk, release-contract, and keyboard-coverage fixes. The private managed Site still serves the tested `e176eed` artifact as version 8; the Site remains owner-only. Commit `b35a403` has passed the application and database workflows.
 
 ## Verified in the current checkout
 
@@ -13,7 +13,7 @@
 - `npm run audit` passes with no high or critical advisories.
 - `npm run build` passes.
 - `npm run verify:release:contract` passes for the Node/npm, root-build, SPA-fallback, required-file, and monorepo-boundary invariants.
-- `npm run test:e2e` passes with 56 Chromium journeys, including bounded auto-spin completion under reduced motion.
+- `npm run test:e2e` passes with 57 Chromium journeys, including bounded auto-spin completion under reduced motion and keyboard-only wheel creation.
 - `npm run test:e2e:cloud` passes with 2 mocked cloud journeys.
 - `npm run verify:deployment:config` passes with the SPA fallback, Vercel policy values, and host-native `dist/_headers` coverage for CSP, HSTS, frame, referrer, permissions, and content-type protections.
 - `npm run verify:client-bundle` passes across 43 generated assets and rejects service-role markers, Supabase secret-key markers, configured secret values, and private-key material in browser output.
@@ -37,6 +37,7 @@
 - Release-contract commit `c06daef` has a green [application CI run](https://github.com/abckids1202/NexusAcademy/actions/runs/38210918612) and green [database-test run](https://github.com/abckids1202/NexusAcademy/actions/runs/38210918533), including the new release-contract verification step.
 - Documentation evidence commit `b0892ac` has a green [application CI run](https://github.com/abckids1202/NexusAcademy/actions/runs/38211290491). Its database workflow [failed during runner setup](https://github.com/abckids1202/NexusAcademy/actions/runs/38211290418) before executing pgTAP; the commit contains no migration or database changes and requires a clean rerun before release sign-off.
 - Follow-up commit `83e6e42` has a green [application CI run](https://github.com/abckids1202/NexusAcademy/actions/runs/38211624601) and green [database-test run](https://github.com/abckids1202/NexusAcademy/actions/runs/38211624725), confirming the prior database failure was transient and the current branch is green.
+- Keyboard-coverage commit `b35a403` has a green [application CI run](https://github.com/abckids1202/NexusAcademy/actions/runs/38212662607) and green [database-test run](https://github.com/abckids1202/NexusAcademy/actions/runs/38212662546), including the keyboard-only wheel creation journey.
 - A static `/health.json` endpoint, scheduled deployment monitor workflow, and privacy-conscious local diagnostics export are present; the live verifier covers twelve public/deep-link routes and validates security-policy values. Monitoring activation still requires a configured deployment URL and an external client-error service decision.
 - A `/privacy` route documents local storage, optional cloud backup, user controls, and the remaining legal-review boundary before public launch.
 - Page routes are lazy-loaded; the main JavaScript chunk is approximately 371 kB minified.
