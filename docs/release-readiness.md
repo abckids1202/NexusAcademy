@@ -2,16 +2,17 @@
 
 **Last verified:** October 12, 2026
 
-**Verified commit:** `4bbe832 chore: pin production runtime and refresh release evidence`
+**Verified commit:** `c06daef ci: enforce release contract invariants`
 
-**Latest full application evidence:** the local release checks were rerun successfully in the current checkout after the deployment hardening, diagnostic, CSP compatibility, Edge Function guard, and auto-spin queue fixes. The private managed Site still serves the tested `e176eed` artifact as version 8; the Site remains owner-only. Release-hardening commit `4bbe832` has passed the application and database workflows.
+**Latest full application evidence:** the local release checks were rerun successfully in the current checkout after the deployment hardening, diagnostic, CSP compatibility, Edge Function guard, auto-spin queue, storage-risk, and release-contract fixes. The private managed Site still serves the tested `e176eed` artifact as version 8; the Site remains owner-only. Release-contract commit `c06daef` has passed the application and database workflows.
 
 ## Verified in the current checkout
 
 - `npm run lint` passes.
-- `npm run test:coverage` passes with 146 tests across 14 source test files and the global coverage gate (70% statements, 65% branches, 75% functions, 75% lines).
+- `npm run test:coverage` passes with 147 tests across 14 source test files and the global coverage gate (70% statements, 65% branches, 75% functions, 75% lines).
 - `npm run audit` passes with no high or critical advisories.
 - `npm run build` passes.
+- `npm run verify:release:contract` passes for the Node/npm, root-build, SPA-fallback, required-file, and monorepo-boundary invariants.
 - `npm run test:e2e` passes with 56 Chromium journeys, including bounded auto-spin completion under reduced motion.
 - `npm run test:e2e:cloud` passes with 2 mocked cloud journeys.
 - `npm run verify:deployment:config` passes with the SPA fallback, Vercel policy values, and host-native `dist/_headers` coverage for CSP, HSTS, frame, referrer, permissions, and content-type protections.
@@ -33,6 +34,7 @@
 - The follow-up commit `b79b64c` has a green [application CI run](https://github.com/abckids1202/NexusAcademy/actions/runs/38207300779) and green [database-test run](https://github.com/abckids1202/NexusAcademy/actions/runs/38207300746), including the remotely executed Edge Function guard and pgTAP RLS suite.
 - The current documentation commit `3ca2931` has a green [application CI run](https://github.com/abckids1202/NexusAcademy/actions/runs/38207657092) and green [database-test run](https://github.com/abckids1202/NexusAcademy/actions/runs/38207657061), confirming the current branch remains green after the evidence update.
 - Release-hardening commit `4bbe832` has a green [application CI run](https://github.com/abckids1202/NexusAcademy/actions/runs/38208435657) and green [database-test run](https://github.com/abckids1202/NexusAcademy/actions/runs/38208435666), confirming the runtime contract and release evidence changes pass the full remote gates.
+- Release-contract commit `c06daef` has a green [application CI run](https://github.com/abckids1202/NexusAcademy/actions/runs/38210918612) and green [database-test run](https://github.com/abckids1202/NexusAcademy/actions/runs/38210918533), including the new release-contract verification step.
 - A static `/health.json` endpoint, scheduled deployment monitor workflow, and privacy-conscious local diagnostics export are present; the live verifier covers twelve public/deep-link routes and validates security-policy values. Monitoring activation still requires a configured deployment URL and an external client-error service decision.
 - A `/privacy` route documents local storage, optional cloud backup, user controls, and the remaining legal-review boundary before public launch.
 - Page routes are lazy-loaded; the main JavaScript chunk is approximately 371 kB minified.
