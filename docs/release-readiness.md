@@ -60,7 +60,7 @@ WheelForge is suitable for a local beta release after a clean-clone check. It is
 
 ## Required before public production
 
-1. Create or designate a dedicated WheelForge GitHub repository, or formally document the current `NexusAcademy` remote as a monorepo and isolate the root WheelForge deployment from legacy directories.
+1. The repository boundary is accepted as the documented `NexusAcademy` monorepo, with only the WheelForge root deployed; preserve this decision through promotion and any future repository split.
 2. Configure a staging Supabase project and verify RLS isolation with two real accounts.
 3. Verify email confirmation, password recovery, account deletion, cloud restore, conflict handling, and redirect URLs against staging.
 4. Deploy through the documented host configuration in `vercel.json` and verify HTTPS, security headers/CSP, environment variables, and rollback using `docs/deployment-runbook.md`.
