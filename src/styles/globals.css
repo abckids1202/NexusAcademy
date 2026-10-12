@@ -1757,6 +1757,18 @@ textarea.text-field {
   color: var(--text);
 }
 
+.storage-risk {
+  border-left: 3px solid var(--warning, #f59e0b);
+  margin: 0;
+  padding: 10px 12px;
+  background: rgba(120, 53, 15, 0.22);
+}
+
+.storage-risk.critical {
+  border-left-color: var(--danger, #ef4444);
+  background: rgba(127, 29, 29, 0.24);
+}
+
 .storage-recovery {
   display: grid;
   gap: 10px;

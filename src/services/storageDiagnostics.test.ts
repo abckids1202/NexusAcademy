@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { formatStorageBytes, getStorageEstimate, getWorkspaceSizeBytes } from "./storageDiagnostics";
+import { formatStorageBytes, getStorageEstimate, getStorageRisk, getWorkspaceSizeBytes } from "./storageDiagnostics";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -10,6 +10,14 @@ describe("storage diagnostics", () => {
     expect(formatStorageBytes(512)).toBe("512 B");
     expect(formatStorageBytes(2048)).toBe("2.0 KB");
     expect(formatStorageBytes(2 * 1024 * 1024)).toBe("2.0 MB");
+  });
+
+  it("warns before a large workspace or nearly full quota becomes unsafe", () => {
+    expect(getStorageRisk(2 * 1024 * 1024, { supported: false })).toBe("warning");
+    expect(getStorageRisk(4 * 1024 * 1024, { supported: false })).toBe("critical");
+    expect(getStorageRisk(100, { supported: true, usageBytes: 900, quotaBytes: 1000 })).toBe("critical");
+    expect(getStorageRisk(100, { supported: true, usageBytes: 750, quotaBytes: 1000 })).toBe("warning");
+    expect(getStorageRisk(100, { supported: true, usageBytes: 200, quotaBytes: 1000 })).toBe("healthy");
   });
 
   it("reports a workspace size even when browser storage is unavailable", () => {

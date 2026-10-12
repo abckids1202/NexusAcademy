@@ -21,7 +21,7 @@ import {
   updateCloudPassword,
   writeCloudBackup,
 } from "../services/cloudBackupService";
-import { formatStorageBytes, getStorageEstimate, getWorkspaceSizeBytes, type StorageEstimate } from "../services/storageDiagnostics";
+import { formatStorageBytes, getStorageEstimate, getStorageRisk, getWorkspaceSizeBytes, type StorageEstimate } from "../services/storageDiagnostics";
 import { clearRuntimeDiagnostics, exportRuntimeDiagnostics, getRuntimeDiagnostics } from "../services/runtimeDiagnostics";
 
 function applyPreferences(settings: UserSettings) {
@@ -55,6 +55,7 @@ export function SettingsPage() {
   const [workspaceSizeBytes, setWorkspaceSizeBytes] = useState(() => getWorkspaceSizeBytes());
   const [diagnosticCount, setDiagnosticCount] = useState(() => getRuntimeDiagnostics().length);
   const preservedCorruptData = getPreservedCorruptData();
+  const storageRisk = getStorageRisk(workspaceSizeBytes, storageEstimate);
 
   useEffect(() => {
     if (!cloudConfigured) return;
@@ -361,6 +362,8 @@ export function SettingsPage() {
           <p className="muted">Workspace size: {formatStorageBytes(workspaceSizeBytes)}{storageEstimate.supported && storageEstimate.usageBytes !== undefined && storageEstimate.quotaBytes !== undefined
             ? ` · Browser storage used: ${formatStorageBytes(storageEstimate.usageBytes)} of ${formatStorageBytes(storageEstimate.quotaBytes)}`
             : " · Browser quota estimate unavailable"}</p>
+          {storageRisk === "warning" && <p className="storage-risk warning" role="alert">This workspace is getting large. Export a backup before adding more history, templates, or media.</p>}
+          {storageRisk === "critical" && <p className="storage-risk critical" role="alert">Storage is close to its practical limit. Export a backup now and remove unused history before continuing.</p>}
           {preservedCorruptData !== undefined && <section className="storage-recovery" aria-labelledby="storage-recovery-title">
             <h3 id="storage-recovery-title">Recover damaged workspace</h3>
             <p>The original saved value is preserved. Download it for diagnosis, then import a valid backup with Replace or reset local data. Merge is disabled because the saved workspace cannot be trusted.</p>
