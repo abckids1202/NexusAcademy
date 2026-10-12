@@ -16,18 +16,28 @@ export class CloudBackupConflictError extends Error {
 
 let client: SupabaseClient | undefined;
 
-function getConfig() {
+export type CloudConfigurationIssue = "missing" | "invalid-url" | "insecure-production" | null;
+
+function getConfiguration(): { config?: { url: string; publishableKey: string }; issue: CloudConfigurationIssue } {
   const url = import.meta.env.VITE_SUPABASE_URL?.trim();
   const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY?.trim();
-  if (!url || !publishableKey) return undefined;
+  if (!url || !publishableKey) return { issue: "missing" };
   try {
     const parsedUrl = new URL(url);
-    if (!parsedUrl.hostname || !["http:", "https:"].includes(parsedUrl.protocol)) return undefined;
-    if (import.meta.env.PROD && parsedUrl.protocol !== "https:") return undefined;
+    if (!parsedUrl.hostname || !["http:", "https:"].includes(parsedUrl.protocol)) return { issue: "invalid-url" };
+    if (import.meta.env.PROD && parsedUrl.protocol !== "https:") return { issue: "insecure-production" };
   } catch {
-    return undefined;
+    return { issue: "invalid-url" };
   }
-  return { url, publishableKey };
+  return { config: { url, publishableKey }, issue: null };
+}
+
+function getConfig() {
+  return getConfiguration().config;
+}
+
+export function getCloudConfigurationIssue(): CloudConfigurationIssue {
+  return getConfiguration().issue;
 }
 
 export function isCloudBackupConfigured(): boolean {

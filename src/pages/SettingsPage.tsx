@@ -10,6 +10,7 @@ import { useDataRevision } from "../hooks/useDataRevision";
 import {
   deleteCloudAccount,
   deleteCloudBackup,
+  getCloudConfigurationIssue,
   getCloudUser,
   isCloudBackupConfigured,
   readCloudBackup,
@@ -39,6 +40,7 @@ export function SettingsPage() {
   const [settings, setSettings] = useState<UserSettings>(() => loadData().settings);
   const [message, setMessage] = useState("");
   const [importReview, setImportReview] = useState<{ data: WheelForgeData; current: WheelForgeData; fingerprint: string } | null>(null);
+  const cloudConfigurationIssue = getCloudConfigurationIssue();
   const cloudConfigured = isCloudBackupConfigured();
   const [cloudUser, setCloudUser] = useState<User | null>(null);
   const [cloudEmail, setCloudEmail] = useState("");
@@ -407,7 +409,7 @@ export function SettingsPage() {
       </ShellCard>
       <ShellCard title="Private cloud backup" description="Optional account-backed backup. Upload and restore are always manual; this does not merge or live-sync devices.">
         <div className="settings-fields cloud-backup-fields">
-          {!cloudConfigured ? <p className="muted">Cloud backup is not configured in this deployment. Local wheels, generators, and tournaments continue to work normally.</p> : searchParams.get("password-reset") === "1" ? cloudUser ? <form className="settings-fields" onSubmit={(event) => { event.preventDefault(); void saveRecoveredPassword(); }}>
+          {!cloudConfigured ? <p className={cloudConfigurationIssue === "missing" ? "muted" : "validation-message"} role={cloudConfigurationIssue === "missing" ? undefined : "alert"}>{cloudConfigurationIssue === "invalid-url" ? "Cloud backup is unavailable because this deployment has an invalid Supabase URL. Local wheels, generators, and tournaments continue to work normally." : cloudConfigurationIssue === "insecure-production" ? "Cloud backup is unavailable because production requires an HTTPS Supabase URL. Local wheels, generators, and tournaments continue to work normally." : "Cloud backup is not configured in this deployment. Local wheels, generators, and tournaments continue to work normally."}</p> : searchParams.get("password-reset") === "1" ? cloudUser ? <form className="settings-fields" onSubmit={(event) => { event.preventDefault(); void saveRecoveredPassword(); }}>
             <p className="muted">Choose a new password for {cloudUser.email}.</p>
             <label className="field-stack"><span>New password</span><input className="text-field" type="password" autoComplete="new-password" minLength={8} required value={recoveryPassword} onChange={(event) => setRecoveryPassword(event.target.value)} /></label>
             <label className="field-stack"><span>Confirm new password</span><input className="text-field" type="password" autoComplete="new-password" minLength={8} required value={recoveryPasswordConfirm} onChange={(event) => setRecoveryPasswordConfirm(event.target.value)} /></label>

@@ -79,6 +79,7 @@ describe("cloud backup adapter", () => {
     vi.stubEnv("VITE_SUPABASE_URL", "");
     const cloud = await loadCloudService();
     expect(cloud.isCloudBackupConfigured()).toBe(false);
+    expect(cloud.getCloudConfigurationIssue()).toBe("missing");
     expect(cloud.getCloudClient()).toBeUndefined();
     expect(await cloud.getCloudUser()).toBeNull();
     expect(mocks.createClient).not.toHaveBeenCalled();
@@ -88,6 +89,7 @@ describe("cloud backup adapter", () => {
     vi.stubEnv("VITE_SUPABASE_URL", "not-a-url");
     const cloud = await loadCloudService();
     expect(cloud.isCloudBackupConfigured()).toBe(false);
+    expect(cloud.getCloudConfigurationIssue()).toBe("invalid-url");
     expect(cloud.getCloudClient()).toBeUndefined();
     expect(mocks.createClient).not.toHaveBeenCalled();
   });
@@ -97,6 +99,7 @@ describe("cloud backup adapter", () => {
     vi.stubEnv("PROD", true);
     const cloud = await loadCloudService();
     expect(cloud.isCloudBackupConfigured()).toBe(false);
+    expect(cloud.getCloudConfigurationIssue()).toBe("insecure-production");
     expect(cloud.getCloudClient()).toBeUndefined();
     expect(mocks.createClient).not.toHaveBeenCalled();
   });
