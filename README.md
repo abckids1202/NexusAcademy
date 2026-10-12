@@ -38,6 +38,12 @@ npm run test:e2e:cross-browser
 
 On Windows, Playwright Firefox may fail to launch with `spawn UNKNOWN`; the CI Ubuntu runner is the authoritative Firefox check when that host limitation occurs.
 
+To run the focused keyboard-only wheel creation check:
+
+```bash
+npm run test:e2e:keyboard
+```
+
 ## Optional Cloud Backup
 
 Local mode works without a cloud project. To enable account-backed private backups, configure Supabase by following [docs/backend-setup.md](docs/backend-setup.md). Never put a Supabase secret or service-role key in this browser app.

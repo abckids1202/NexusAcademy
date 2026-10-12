@@ -16,6 +16,7 @@
     "test:coverage": "vitest run --coverage",
     "audit": "npm audit --audit-level=high",
     "test:e2e": "playwright test",
+    "test:e2e:keyboard": "playwright test e2e/accessibility.e2e.ts --grep \"keyboard-only users\"",
     "test:e2e:cloud": "playwright test --config playwright.cloud.config.ts",
     "test:e2e:cross-browser": "playwright test --config playwright.cross-browser.config.ts",
     "verify:supabase:staging": "node scripts/verify-supabase-staging.mjs",

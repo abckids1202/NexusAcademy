@@ -27,6 +27,8 @@ Run the smoke flow on each supported target:
 
 ## Keyboard and Assistive Technology
 
+The automated keyboard smoke journey can be run with `npm run test:e2e:keyboard`. It covers creating and saving a wheel without pointer input; complete the manual walkthrough below as a separate release gate.
+
 1. From `/`, press `Tab` and confirm the skip link receives focus.
 2. Activate the skip link and confirm focus moves to the main content.
 3. Create and edit a wheel without using a pointer.
