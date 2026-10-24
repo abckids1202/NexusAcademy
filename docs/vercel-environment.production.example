@@ -1,0 +1,11 @@
+# Add these two variables to the Vercel project.
+# Replace both placeholder values before saving.
+
+VITE_SUPABASE_URL=https://<production-project-ref>.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=<production-publishable-key>
+
+# Do not add these to Vercel:
+# SUPABASE_SERVICE_ROLE_KEY
+# SUPABASE_SECRET_KEY
+# SUPABASE_TEST_PASSWORD
+# DEPLOYMENT_URL

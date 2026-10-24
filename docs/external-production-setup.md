@@ -87,6 +87,8 @@ VITE_SUPABASE_URL=https://<staging-project-ref>.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=<staging-publishable-key>
 ```
 
+For production, use the copy-ready [Vercel environment template](vercel-environment.production.example). Vercel needs exactly two WheelForge variables; `DEPLOYMENT_URL` belongs in GitHub Actions, not the browser build.
+
 Do not add any of these to Vercel as `VITE_*` variables:
 
 ```text
