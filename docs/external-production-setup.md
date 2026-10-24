@@ -146,7 +146,8 @@ Start from the exact pushed commit:
 
 ```powershell
 git fetch origin
-git checkout f7462e7
+# Replace <verified-commit> with the exact commit whose application and database CI runs are green.
+git checkout <verified-commit>
 npm ci
 npm run check
 ```
