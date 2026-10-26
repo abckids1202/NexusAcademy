@@ -4,6 +4,43 @@ This runbook is the operator handoff for moving WheelForge from a locally verifi
 
 Do not paste service-role keys, database passwords, recovery tokens, or backup payloads into Git, issues, chat, screenshots, or release notes. Only the Supabase publishable key may be exposed to the browser build.
 
+## Local-Only Launch (No External Database)
+
+WheelForge can be deployed without Supabase. Leave the Vercel Environment Variables section completely empty. The app will keep local wheels, chains, templates, participants, tournaments, exports, imports, and browser persistence; cloud account and cloud backup controls remain disabled.
+
+Use the copy-ready [local-only Vercel template](vercel-environment.local-only.example), then configure:
+
+```text
+Root directory: repository root
+Install command: npm ci
+Build command: npm run build
+Output directory: dist
+Node: 22
+Environment variables: none
+```
+
+From the repository root, before deploying:
+
+```powershell
+git fetch origin
+# Replace <verified-commit> with the exact commit whose CI is green.
+git checkout <verified-commit>
+npm ci
+npm run check
+npm run build
+```
+
+Deploy from the Vercel dashboard or with `vercel --prod`. After Vercel provides the HTTPS origin, verify it from PowerShell:
+
+```powershell
+$env:DEPLOYMENT_URL = "https://<your-vercel-domain>"
+$env:NODE_ENV = "production"
+npm run verify:deployment
+Remove-Item Env:DEPLOYMENT_URL, Env:NODE_ENV
+```
+
+Open `/settings` and confirm the message says cloud backup is not configured. Test local backup export/import in a clean browser profile. Do not add GitHub Supabase secrets for this local-only launch.
+
 ## 1. Resources To Prepare
 
 Create or obtain these resources before starting:

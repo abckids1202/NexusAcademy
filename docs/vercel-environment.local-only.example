@@ -1,0 +1,3 @@
+# WheelForge local-only deployment
+# Leave Vercel Environment Variables empty.
+# No Supabase URL, publishable key, service-role key, or database credential is needed.
